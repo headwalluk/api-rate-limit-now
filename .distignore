@@ -1,7 +1,9 @@
 .git
 .github
+.gitignore
 .distignore
 .vscode
+build
 dev-notes
 phpcs.xml
 CLAUDE.md

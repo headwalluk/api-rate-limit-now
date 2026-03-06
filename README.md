@@ -1,5 +1,11 @@
 # API Rate Limiter
 
+![Version](https://img.shields.io/github/v/tag/headwalluk/api-rate-limit-now?label=version&sort=semver)
+![PHP](https://img.shields.io/badge/PHP-8.0%2B-7A86B8)
+![WordPress](https://img.shields.io/badge/WordPress-6.0%2B-21759B)
+![License](https://img.shields.io/github/license/headwalluk/api-rate-limit-now)
+![Build](https://img.shields.io/github/actions/workflow/status/headwalluk/api-rate-limit-now/release.yml?label=release)
+
 Rate-limit WordPress REST API calls by client IP address.
 
 Lightweight plugin that uses WordPress transients to throttle REST API requests. When a rate-limited client makes requests too frequently, the plugin returns an HTTP 429 (Too Many Requests) response.
