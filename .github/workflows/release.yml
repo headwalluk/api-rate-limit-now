@@ -1,0 +1,71 @@
+name: Build Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get version from tag
+        id: get_version
+        run: |
+          # Remove 'v' prefix from tag (v1.0.0 -> 1.0.0)
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Plugin version: ${VERSION}"
+
+      - name: Prepare plugin directory
+        run: |
+          mkdir -p build
+          rsync -av --exclude-from=.distignore ./ build/api-rate-limit-now/
+
+      - name: Create versioned zip
+        run: |
+          cd build
+          zip -r api-rate-limit-now-${{ steps.get_version.outputs.version }}.zip api-rate-limit-now/
+          cd ..
+
+      - name: Create generic zip
+        run: |
+          cd build
+          zip -r api-rate-limit-now.zip api-rate-limit-now/
+          cd ..
+
+      - name: Upload versioned zip as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-rate-limit-now-${{ steps.get_version.outputs.version }}
+          path: build/api-rate-limit-now-${{ steps.get_version.outputs.version }}.zip
+
+      - name: Upload generic zip as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-rate-limit-now
+          path: build/api-rate-limit-now.zip
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            build/api-rate-limit-now-${{ steps.get_version.outputs.version }}.zip
+            build/api-rate-limit-now.zip
+          body: |
+            **API Rate Limiter v${{ steps.get_version.outputs.version }}**
+
+            Download the zip file and install via WordPress admin or upload to your plugins directory.
+
+            See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details.
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

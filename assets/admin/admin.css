@@ -1,0 +1,24 @@
+/**
+ * API Rate Limiter - Admin styles.
+ *
+ * @package Api_Rate_Limiter
+ */
+
+/* Tab panels */
+.wptarl-tab-panel {
+	margin-top: 20px;
+	padding: 20px;
+	background: #fff;
+	border: 1px solid #ccd0d4;
+	box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+/* Copy IP link */
+.wptarl-copy-ip {
+	font-size: 12px;
+	text-decoration: none;
+}
+
+.wptarl-copy-ip.wptarl-copied {
+	color: #00a32a;
+}

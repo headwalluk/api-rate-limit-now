@@ -1,0 +1,9 @@
+.git
+.github
+.distignore
+.vscode
+dev-notes
+phpcs.xml
+CLAUDE.md
+CHANGELOG.md
+README.md
