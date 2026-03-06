@@ -43,6 +43,25 @@ All settings are managed from the WordPress admin dashboard under **Settings > A
 - **Enable logging** - Log blocked API requests to the Log tab (default: enabled)
 - **Log retention** - Number of days to keep log entries (default: 7)
 
+## WooCommerce
+
+This plugin works with WooCommerce out of the box. WooCommerce's REST API (`/wp-json/wc/`) and Store API (`/wp-json/wc/store/`) are standard WordPress REST API routes, so they are automatically protected by this plugin.
+
+This is particularly useful for WooCommerce sites that are targeted by bots scraping product data, brute-forcing coupon codes, or spamming checkout endpoints.
+
+**Headless storefronts:** If you are running a headless WooCommerce setup where your frontend makes rapid legitimate API calls, you may want to lower the rate limit interval (e.g. 2-3 seconds) or use the `wptarl_is_client_rate_limited` filter to exempt authenticated API consumers.
+
+## Choosing the Right Interval
+
+The default interval of 10 seconds works well for most sites, but the right value depends on your use case:
+
+- **Standard WordPress sites** - 10-30 seconds is usually fine. Most legitimate visitors don't make rapid API calls.
+- **WooCommerce stores** - 5-10 seconds balances protection against bots with a smooth shopping experience.
+- **Headless / decoupled frontends** - 1-3 seconds, or consider exempting known frontend IPs via the "Never rate-limited IPs" setting.
+- **High-traffic APIs** - Use the `wptarl_seconds_between_api_calls` filter to set different limits per endpoint or client.
+
+If you're unsure, start with the default and check the **Log** tab to see if legitimate requests are being blocked.
+
 ## Filters
 
 The plugin provides filters for developers to customise behaviour from a theme or plugin.
