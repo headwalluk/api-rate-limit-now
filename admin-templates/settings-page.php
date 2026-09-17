@@ -94,7 +94,7 @@ printf(
 	esc_attr( OPT_NEVER_RATE_LIMITED_ROUTES ),
 	esc_html__( 'Never rate-limited routes', 'api-rate-limit-now' ),
 	esc_textarea( $never_limited_routes ),
-	esc_html__( 'REST API routes that are never rate-limited, one per line, without the /wp-json/ prefix. Each covers the routes below it, so wc/store covers wc/store/v1/cart. The defaults exempt the WooCommerce Store API and PayPal button requests that shoppers make during checkout.', 'api-rate-limit-now' )
+	esc_html__( 'REST API routes that are never rate-limited, one per line. Each covers the routes below it, matching whole path segments: wc/store covers wc/store/v1/cart, but not wc/storefront. Wildcards are not supported. You can paste a request URI from the Log tab. The defaults exempt the WooCommerce Store API and PayPal button requests that shoppers make during checkout.', 'api-rate-limit-now' )
 );
 
 // Rate-limited user agents.

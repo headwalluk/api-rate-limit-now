@@ -263,7 +263,7 @@ class Plugin {
 	}
 
 	/**
-	 * Get the whole seconds until the client's current window ends, for the Retry-After header.
+	 * Get the whole seconds until a request is next allowed, for the Retry-After header.
 	 *
 	 * @since 2.1.0
 	 *
@@ -275,10 +275,11 @@ class Plugin {
 		$expires_at = is_numeric( $window_expires_at ) ? (int) $window_expires_at : 0;
 
 		if ( $expires_at > RETRY_AFTER_MIN ) {
-			$retry_after = $expires_at - time();
+			// A database transient is still valid during its final second (get_transient() tests timeout < time()).
+			$retry_after = $expires_at - time() + 1;
 		} else {
 			// Pre-2.1.0 transients hold '1', not an expiry; the full interval never under-reports.
-			$retry_after = absint( get_option( OPT_SECONDS_BETWEEN_CALLS, DEF_SECONDS_BETWEEN_CALLS ) );
+			$retry_after = absint( get_option( OPT_SECONDS_BETWEEN_CALLS, DEF_SECONDS_BETWEEN_CALLS ) ) + 1;
 		}
 
 		return max( RETRY_AFTER_MIN, $retry_after );

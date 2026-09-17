@@ -33,12 +33,14 @@ add_filter( 'wptarl_rate_limited_ips', function ( $ips ) {
 
 ### `wptarl_is_client_rate_limited`
 
-Override whether the current client is rate-limited, after the plugin has made its own decision from the settings, including *Rate-limited user agents*. For a fixed list of user agents, use that setting instead of this filter.
+Override whether the current client is rate-limited, after the plugin has made its own decision from the settings. Runs for every REST request, including ones the settings exempt: an IP on *Never rate-limited IPs* or a route on *Never rate-limited routes* arrives here as `false`, and returning `true` limits it anyway.
+
+For a fixed list of user agents or routes, use the settings instead of this filter.
 
 **Parameters:**
 - `bool $is_limited` — The plugin's decision
 
-**Returns:** `bool` — `true` to rate-limit this request, `false` to let it through unchecked.
+**Returns:** `bool` — `true` to rate-limit this request, `false` to let it through unchecked. Cast with `(bool)`, so return a real boolean: the string `'false'` counts as `true`.
 
 Returning `true` has no effect when the plugin couldn't determine the client's IP address.
 
@@ -65,7 +67,7 @@ Filter the interval for a client. Runs only for a rate-limited client whose prev
 - `mixed $seconds` — The *Seconds between API calls* setting. Read from the database, so usually a numeric string rather than an `int`
 - `string $client_ip` — The client's IP address
 
-**Returns:** `int` — Seconds until this client may make another request. The value is passed through `absint()`; `0` sets no transient, so the client's next request is allowed too.
+**Returns:** `int` — Seconds until this client may make another request. The value is passed through `absint()`; `0` sets no transient, so the client's next request is allowed too. The `Retry-After` header on a later 429 follows the value you returned.
 
 ```php
 // Allow a known partner to make faster requests.
@@ -133,4 +135,4 @@ wp option update wptarl_seconds_between_calls 5
 wp option update wptarl_rate_limited_user_agents "$(printf 'ExampleInventorySync\nExampleMailer/1')"
 ```
 
-Values written this way skip the settings page's validation, so write valid IP addresses and whole numbers greater than zero.
+Values written this way skip the settings page's validation, so write valid IP addresses and whole numbers greater than zero. Routes are an exception: each line is reduced to its route when it's matched, so `/wp-json/wc/store/` works as well as `wc/store`. The same [segment matching](../configuration.md#how-matching-works) applies.

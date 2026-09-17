@@ -126,14 +126,39 @@ function wptarl_current_rest_route(): string {
 }
 
 /**
- * Normalise a route prefix for matching: lower-cased, without surrounding slashes or whitespace.
+ * Normalise a route prefix for matching: lower-cased, without host, REST URL prefix, query string or surrounding slashes.
  *
  * @since 2.1.0
  *
- * @param string $route_prefix Route prefix as entered, e.g. '/wc/store/'.
+ * @param string $route_prefix Route prefix as entered, e.g. '/wc/store/', '/wp-json/wc/store' or a full URL.
  *
  * @return string Normalised prefix, e.g. 'wc/store'.
  */
 function wptarl_normalise_route_prefix( string $route_prefix ): string {
-	return strtolower( trim( $route_prefix, " \t/" ) );
+	$route_path = trim( $route_prefix );
+
+	$query_string = (string) wp_parse_url( $route_path, PHP_URL_QUERY );
+	$query_args   = array();
+	wp_parse_str( $query_string, $query_args );
+
+	if ( isset( $query_args['rest_route'] ) && is_string( $query_args['rest_route'] ) ) {
+		// A pasted "/?rest_route=/wc/store" URL names its route in the query string.
+		$route_path = $query_args['rest_route'];
+	} elseif ( isset( $query_args['wc-ajax'], $query_args['path'] ) && is_string( $query_args['path'] ) ) {
+		// Plugins proxying REST through "/?wc-ajax=…&path=/route" name the route in path.
+		$route_path = $query_args['path'];
+	} elseif ( str_contains( $route_path, '://' ) ) {
+		$route_path = (string) wp_parse_url( $route_path, PHP_URL_PATH );
+	} else {
+		// Already a path or bare route.
+	}
+
+	$route_path      = strtolower( trim( (string) preg_replace( '/[?#].*$/s', '', $route_path ), " \t/" ) );
+	$rest_url_prefix = strtolower( trim( rest_get_url_prefix(), '/' ) );
+
+	if ( '' !== $rest_url_prefix && ( $route_path === $rest_url_prefix || str_starts_with( $route_path, $rest_url_prefix . '/' ) ) ) {
+		$route_path = trim( substr( $route_path, strlen( $rest_url_prefix ) ), '/' );
+	}
+
+	return $route_path;
 }

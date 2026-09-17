@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file.
 
+Operator and developer documentation lives in [`docs/`](docs/README.md), including [worked examples](docs/examples.md).
+
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
@@ -10,9 +12,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
-- **Never rate-limited routes setting**, defaulting to `wc/store` (WooCommerce Store API) and `wc-ppcp` (Payment Plugins for PayPal WooCommerce). Shoppers' browsers call these several times a second during cart and checkout; limiting them refused real customers and broke PayPal buttons. **Sites updating from 2.0.0 stop rate-limiting the Store API.** Remove `wc/store` from the list to restore that, and see the configuration docs for WooCommerce's own checkout rate limiting.
+- **Never rate-limited routes setting**, defaulting to `wc/store` (WooCommerce Store API) and `wc-ppcp` (Payment Plugins for PayPal WooCommerce). Routes match on whole path segments (`wc/store` covers `wc/store/v1/cart`, not `wc/storefront`), and a request URI pasted from the Log tab, including `/wp-json/…`, `?rest_route=…` and `wc-ajax` forms, is saved as its route. Shoppers' browsers call these several times a second during cart and checkout; limiting them refused real customers and broke PayPal buttons. **Sites updating from 2.0.0 stop rate-limiting the Store API.** Remove `wc/store` from the list to restore that, and see the configuration docs for WooCommerce's own checkout rate limiting.
 
-- **A `Retry-After` header on every 429**, giving the whole seconds until the client may make its next request. Clients that honour it back off exactly as long as needed; the status code and JSON body are unchanged. The rate-limit transient now stores when the client's window ends, rather than `1`.
+- **A `Retry-After` header on every 429**, giving the whole seconds until the client may make its next request. A client that waits exactly that long is allowed. Clients that honour it back off exactly as long as needed; the status code and JSON body are unchanged. The rate-limit transient now stores when the client's window ends, rather than `1`.
 - **Rate-limited user agents setting.** Requests whose `User-Agent` contains any listed string (one per line, case-insensitive) are always rate-limited, including logged-in users and integrations authenticating with WooCommerce API keys or application passwords, which were previously always exempt. Never rate-limited IPs stay exempt.
 - **Automatic updates from GitHub releases.** New releases appear on the Plugins and Updates screens like any other plugin update. Lookups are cached for 12 hours, a failed lookup backs off for an hour, and failures are always written to the PHP error log. Sites on 2.0.0 have no updater, so need to install this release manually once.
 - The `wptarl_updater_enabled` filter, to turn the updater off on staging sites or pin a site to its current version.

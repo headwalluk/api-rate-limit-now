@@ -59,6 +59,9 @@ wp cron event run wptarl_prune_log
 wp db query "SELECT * FROM $(wp db prefix)wptarl_log ORDER BY id DESC LIMIT 5"
 ```
 
+Reusable harnesses live in `dev-notes/testing/` (see its `README.md`); run them all after touching
+the matchers, `docs/` matching tables, or `Plugin::enforce_rate_limit()`.
+
 Two rules: reset the state you touch afterwards (`wp option delete`, `wp transient delete`),
 and test the **defensive** path as well as the happy one — a filter returning the wrong type,
 a missing `$_SERVER` key, a request with no determinable IP.
@@ -252,7 +255,7 @@ planned version; if the release number changes, update them.
 `docs/` is the maintained entry point and is tracked/public. **One audience per document** —
 do not mix operator and developer material in the same file:
 
-- `docs/how-it-works.md`, `docs/configuration.md`, `docs/troubleshooting.md` — site operators
+- `docs/how-it-works.md`, `docs/configuration.md`, `docs/examples.md`, `docs/troubleshooting.md` — site operators. `configuration.md` holds the matching tables for routes and user agents; any change to `wptarl_normalise_route_prefix()` or the matchers must update them and the examples
 - `docs/developers/hooks-and-filters.md` — the public extension surface
 
 A change to behaviour, a setting or a filter updates the matching `docs/` page in the same

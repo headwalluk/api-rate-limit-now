@@ -41,6 +41,7 @@ Full user and developer documentation lives in [`docs/`](docs/):
 
 - [How it works](docs/how-it-works.md)
 - [Configuration](docs/configuration.md)
+- [Examples](docs/examples.md)
 - [Troubleshooting](docs/troubleshooting.md)
 - [Hooks and filters](docs/developers/hooks-and-filters.md) *(for developers)*
 
