@@ -66,6 +66,16 @@ class Settings {
 
 		register_setting(
 			SETTINGS_GROUP,
+			OPT_RATE_LIMITED_USER_AGENTS,
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => array( $this, 'sanitize_user_agent_list' ),
+				'default'           => DEF_RATE_LIMITED_USER_AGENTS,
+			)
+		);
+
+		register_setting(
+			SETTINGS_GROUP,
 			OPT_LOGGING_ENABLED,
 			[
 				'type'              => 'boolean',
@@ -160,5 +170,20 @@ class Settings {
 		}
 
 		return implode( ', ', $validated_ips );
+	}
+
+	/**
+	 * Sanitize the User-Agent list to one trimmed, unique string per line.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param mixed $value Raw input value.
+	 *
+	 * @return string Newline-separated User-Agent strings.
+	 */
+	public function sanitize_user_agent_list( mixed $value ): string {
+		$raw_lines = is_string( $value ) ? $value : '';
+
+		return implode( "\n", wptarl_parse_line_list( sanitize_textarea_field( $raw_lines ) ) );
 	}
 }

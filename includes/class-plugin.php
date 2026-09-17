@@ -145,6 +145,9 @@ class Plugin {
 		if ( in_array( $client_ip, $never_limited_ips, true ) ) {
 			// Never rate-limit these IPs.
 			$is_limited = false;
+		} elseif ( $this->is_user_agent_rate_limited() ) {
+			// A listed User-Agent is limited whether or not the client is logged in.
+			$is_limited = true;
 		} else {
 			$rate_limited_ips = apply_filters( 'wptarl_rate_limited_ips', wptarl_parse_ip_list( (string) get_option( OPT_RATE_LIMITED_IPS, DEF_RATE_LIMITED_IPS ) ) );
 
@@ -160,6 +163,31 @@ class Plugin {
 		}
 
 		return $is_limited;
+	}
+
+	/**
+	 * Check whether the client's User-Agent contains any string from the rate-limited user agents setting.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @return bool True when a listed string appears in the User-Agent, ignoring case.
+	 */
+	private function is_user_agent_rate_limited(): bool {
+		$is_match   = false;
+		$user_agent = wptarl_client_user_agent();
+
+		if ( '' !== $user_agent ) {
+			$fragments = wptarl_parse_line_list( (string) get_option( OPT_RATE_LIMITED_USER_AGENTS, DEF_RATE_LIMITED_USER_AGENTS ) );
+
+			foreach ( $fragments as $fragment ) {
+				if ( false !== stripos( $user_agent, $fragment ) ) {
+					$is_match = true;
+					break;
+				}
+			}
+		}
+
+		return $is_match;
 	}
 
 	/**

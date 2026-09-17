@@ -33,7 +33,7 @@ add_filter( 'wptarl_rate_limited_ips', function ( $ips ) {
 
 ### `wptarl_is_client_rate_limited`
 
-Override whether the current client is rate-limited, after the plugin has made its own decision from the settings.
+Override whether the current client is rate-limited, after the plugin has made its own decision from the settings, including *Rate-limited user agents*. For a fixed list of user agents, use that setting instead of this filter.
 
 **Parameters:**
 - `bool $is_limited` — The plugin's decision
@@ -123,11 +123,13 @@ To configure the plugin from code or WP-CLI, write the options WordPress stores 
 | `wptarl_rate_limit_all_guests` | Rate-limit all guests |
 | `wptarl_rate_limited_ips` | Rate-limited IPs (comma-separated) |
 | `wptarl_never_rate_limited_ips` | Never rate-limited IPs (comma-separated) |
+| `wptarl_rate_limited_user_agents` | Rate-limited user agents (newline-separated) |
 | `wptarl_logging_enabled` | Enable logging |
 | `wptarl_log_retention` | Log retention (days) |
 
 ```bash
 wp option update wptarl_seconds_between_calls 5
+wp option update wptarl_rate_limited_user_agents "$(printf 'ExampleInventorySync\nExampleMailer/1')"
 ```
 
 Values written this way skip the settings page's validation, so write valid IP addresses and whole numbers greater than zero.

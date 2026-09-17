@@ -23,11 +23,18 @@ A blocked request doesn't create a new transient, so the interval is measured fr
 The decision is made in this order:
 
 1. **Never rate-limited IPs.** An IP on this list is never limited. By default the list holds `127.0.0.1` and `::1`, so the server's own requests are never blocked.
-2. **Rate-limited IPs.** If this list has any entries, only the IPs on it are limited, whether or not the client is logged in, and the *Rate-limit all guests* setting is not consulted.
-3. **Rate-limit all guests.** If the rate-limited IPs list is empty and this setting is on (the default), every client that isn't logged in is limited.
-4. Otherwise, the client isn't limited.
+2. **Rate-limited user agents.** A request whose `User-Agent` header contains one of the listed strings is limited, whether or not the client is logged in.
+3. **Rate-limited IPs.** If this list has any entries, only the IPs on it are limited, whether or not the client is logged in, and the *Rate-limit all guests* setting is not consulted.
+4. **Rate-limit all guests.** If the rate-limited IPs list is empty and this setting is on (the default), every client that isn't logged in is limited.
+5. Otherwise, the client isn't limited.
 
 Developers can change the outcome with the filters in [hooks and filters](developers/hooks-and-filters.md).
+
+### API clients count as logged in
+
+"Logged in" means WordPress has identified a user for the request, which covers more than a browser session. Requests authenticated with WooCommerce REST API keys or WordPress application passwords count as logged in, so under the default settings **integrations using API keys are never rate-limited**.
+
+To limit an integration that authenticates, add a string from its `User-Agent` to **Rate-limited user agents**. The access log shows each client's user agent, usually as the last quoted field on each line.
 
 ## What a blocked client sees
 

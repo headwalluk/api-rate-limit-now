@@ -20,6 +20,7 @@ API Rate Limiter is a lightweight plugin that uses WordPress transients to throt
 * Configurable rate limit interval (seconds between allowed calls)
 * Option to rate-limit all non-logged-in users or specific IPs only
 * IP allowlist to exempt specific addresses from rate limiting
+* Always rate-limit chosen integrations by User-Agent, including ones that authenticate with API keys
 * Tabbed admin settings page for easy configuration (no code editing required)
 * Request logging with configurable retention (blocked requests only, zero impact on normal traffic)
 * Extensibility via WordPress filters

@@ -10,12 +10,30 @@ All settings live under **Settings → API Rate Limiter** in the WordPress admin
 | Rate-limit all guests | On | Limit every client that isn't logged in. Only applies while *Rate-limited IPs* is empty |
 | Rate-limited IPs | *(empty)* | When this list has entries, **only** these IPs are limited, logged in or not |
 | Never rate-limited IPs | `127.0.0.1, ::1` | IPs that are never limited. Checked before everything else |
+| Rate-limited user agents | *(empty)* | Requests whose `User-Agent` contains one of these strings are always limited, logged in or not. One per line |
 | Enable logging | On | Record blocked requests on the **Log** tab |
 | Log retention (days) | `7` | Log entries older than this are deleted by a daily task. Saving `0` or an empty value restores the default |
 
 IP lists accept addresses separated by commas, spaces or new lines. Invalid addresses are dropped when you save. Only single IPv4 or IPv6 addresses are supported, not ranges or CIDR blocks.
 
 See [how it works](how-it-works.md#who-is-rate-limited) for the order in which the IP lists and the guest setting are applied.
+
+## Rate-limited user agents
+
+Each line is matched as a case-insensitive substring of the request's `User-Agent` header. Blank lines and duplicates are removed when you save.
+
+```
+ExampleInventorySync
+ExampleMailer/1
+```
+
+With that list, `ExampleInventorySync` matches `ExampleInventorySync` and `exampleinventorysync-agent/2.0`, and `ExampleMailer/1` matches `ExampleMailer/1.0` but not `ExampleMailer/2.0`. Choose strings specific enough not to match browsers: a line such as `Mozilla` would limit almost every visitor.
+
+This is the way to limit an integration that authenticates with API keys, which otherwise counts as logged in and is exempt. See [API clients count as logged in](how-it-works.md#api-clients-count-as-logged-in). IPs on *Never rate-limited IPs* stay exempt whatever their user agent.
+
+A `User-Agent` is chosen by the client, so this identifies well-behaved integrations. It doesn't stop a client that is trying to avoid the limit.
+
+Before listing an integration, check how fast it legitimately calls the API. One that pages through products or orders faster than the interval has every request after the first refused until the interval passes, and may abandon the sync. Match the interval to its paging speed, or leave it off the list.
 
 ## Choosing an interval
 
@@ -31,3 +49,5 @@ If you're unsure, start with the default and watch the **Log** tab for requests 
 ## WooCommerce
 
 WooCommerce's REST API (`/wp-json/wc/…`) and Store API (`/wp-json/wc/store/…`) are ordinary WordPress REST routes, so they're covered with no extra setup. This helps on stores targeted by bots scraping product data, guessing coupon codes or spamming checkout endpoints.
+
+Integrations that connect with WooCommerce API keys (inventory, email marketing, marketplace sync) count as logged in and aren't limited by default. Use [rate-limited user agents](#rate-limited-user-agents) to limit a specific one.

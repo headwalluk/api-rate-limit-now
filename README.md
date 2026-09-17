@@ -15,6 +15,7 @@ A lightweight plugin that uses WordPress transients to throttle REST API request
 - Rate-limits REST API calls by client IP address, including WooCommerce's REST and Store APIs
 - Limits every visitor who isn't logged in, or only a list of specific IPs
 - Exempts trusted IPs, with localhost exempt by default
+- Always limits chosen integrations by user agent, including ones that authenticate with API keys
 - Configured from a settings page, with no code editing
 - Logs blocked requests, with configurable retention. Allowed requests are never logged, so normal traffic is unaffected
 - Filters for developers to customise who is limited and how often

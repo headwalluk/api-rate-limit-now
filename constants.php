@@ -10,16 +10,18 @@ namespace Api_Rate_Limiter;
 defined( 'ABSPATH' ) || die();
 
 // Option keys (wp_options) - prefix with OPT_.
-const OPT_SECONDS_BETWEEN_CALLS  = 'wptarl_seconds_between_calls';
-const OPT_RATE_LIMIT_ALL_GUESTS  = 'wptarl_rate_limit_all_guests';
-const OPT_RATE_LIMITED_IPS       = 'wptarl_rate_limited_ips';
-const OPT_NEVER_RATE_LIMITED_IPS = 'wptarl_never_rate_limited_ips';
+const OPT_SECONDS_BETWEEN_CALLS    = 'wptarl_seconds_between_calls';
+const OPT_RATE_LIMIT_ALL_GUESTS    = 'wptarl_rate_limit_all_guests';
+const OPT_RATE_LIMITED_IPS         = 'wptarl_rate_limited_ips';
+const OPT_NEVER_RATE_LIMITED_IPS   = 'wptarl_never_rate_limited_ips';
+const OPT_RATE_LIMITED_USER_AGENTS = 'wptarl_rate_limited_user_agents';
 
 // Default values - prefix with DEF_.
-const DEF_SECONDS_BETWEEN_CALLS  = 10;
-const DEF_RATE_LIMIT_ALL_GUESTS  = true;
-const DEF_RATE_LIMITED_IPS       = '';
-const DEF_NEVER_RATE_LIMITED_IPS = '127.0.0.1, ::1';
+const DEF_SECONDS_BETWEEN_CALLS    = 10;
+const DEF_RATE_LIMIT_ALL_GUESTS    = true;
+const DEF_RATE_LIMITED_IPS         = '';
+const DEF_NEVER_RATE_LIMITED_IPS   = '127.0.0.1, ::1';
+const DEF_RATE_LIMITED_USER_AGENTS = '';
 
 // Transient key prefix.
 const TRANSIENT_PREFIX = 'wptarl_';

@@ -71,3 +71,39 @@ function wptarl_parse_ip_list( string $raw_ips ): array {
 
 	return $result;
 }
+
+/**
+ * Get the client's User-Agent header, or an empty string when none was sent.
+ *
+ * @since 2.1.0
+ *
+ * @return string Sanitized User-Agent.
+ */
+function wptarl_client_user_agent(): string {
+	$user_agent = '';
+
+	if ( isset( $_SERVER['HTTP_USER_AGENT'] ) ) {
+		$user_agent = sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) );
+	}
+
+	return $user_agent;
+}
+
+/**
+ * Parse a newline-separated string into an array of trimmed, non-empty, unique lines.
+ *
+ * @since 2.1.0
+ *
+ * @param string $raw_lines Raw text, one entry per line.
+ *
+ * @return array<string> Lines in their original order.
+ */
+function wptarl_parse_line_list( string $raw_lines ): array {
+	$lines = preg_split( '/\R/', $raw_lines );
+
+	if ( ! is_array( $lines ) ) {
+		$lines = array();
+	}
+
+	return array_values( array_unique( array_filter( array_map( 'trim', $lines ), 'strlen' ) ) );
+}

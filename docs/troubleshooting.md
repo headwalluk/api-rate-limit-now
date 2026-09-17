@@ -8,7 +8,7 @@
    - Real visitors trigger them (a block-based WooCommerce checkout, a search-as-you-type widget): lower **Seconds between API calls**. See [choosing an interval](configuration.md#choosing-an-interval).
    - The caller is recognisable some other way, such as an API key header: a developer can exempt it with the `wptarl_is_client_rate_limited` filter. See [hooks and filters](developers/hooks-and-filters.md).
 
-Logged-in users are not limited while **Rate-limited IPs** is empty. If editors see 429 errors in the block editor, check whether their IP is on that list.
+Logged-in users are not limited while **Rate-limited IPs** is empty, unless their browser's user agent matches **Rate-limited user agents**. If editors see 429 errors in the block editor, check both lists.
 
 ## Everyone appears to have the same IP address
 
@@ -22,7 +22,7 @@ The IP shown at the top of the settings page is the address the plugin sees for 
 
 ## Nothing is being blocked
 
-- **Check who is limited.** By default only visitors who aren't logged in are limited. Test from a private browsing window, not your logged-in admin session.
+- **Check who is limited.** By default only visitors who aren't logged in are limited. Test from a private browsing window, not your logged-in admin session. Integrations using WooCommerce API keys or application passwords also count as logged in; list their user agent under **Rate-limited user agents** to limit them.
 - **Check the never-limited list.** Requests from `127.0.0.1` and `::1` are never limited, which includes testing with `curl` on the server itself.
 - **Make two requests inside the interval.** The first request is always allowed; only a second one within the interval is blocked:
 
