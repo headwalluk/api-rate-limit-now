@@ -17,9 +17,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Added
 
 - The `wptarl_redacted_query_params` filter, to add name fragments to redact.
+- The `wptarl_log_view_rows` filter, to change how many of the most recent entries the Log tab shows (default 100, at most 1,000).
 
 ### Fixed
 
+- The Log tab's "Showing the N most recent blocked requests" line now uses the correct singular and plural forms in every language.
 - Long request URIs were truncated by byte count, which could split a multi-byte character and make the log insert fail. They are now truncated by character.
 
 ## [2.1.0] - 2026-09-17

@@ -118,7 +118,7 @@ If you're unsure, start with the default and watch the **Log** tab for requests 
 
 ## The Log tab
 
-The **Log** tab lists the 100 most recent refused requests: IP address, time and request URI. **Clear Log** deletes every entry. Entries are also deleted automatically after the retention period.
+The **Log** tab lists the 100 most recent refused requests, newest first: IP address, time and request URI. Older entries stay in the database until the retention period removes them, but aren't shown; there's no paging. A developer can show more or fewer with the `wptarl_log_view_rows` filter, up to 1,000. **Clear Log** deletes every entry.
 
 Credential-like query values, such as `consumer_secret` or `oauth_signature`, appear as `REDACTED`. See [logging](how-it-works.md#logging). Entries logged by version 2.1.0 or earlier weren't redacted, so clear the log after updating if an integration sends credentials in its URLs.
 

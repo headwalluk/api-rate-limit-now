@@ -135,7 +135,7 @@ echo '</form></div>';
 
 echo '<div id="log-panel" class="wptarl-tab-panel" style="display:none;">';
 
-$log_entries = Log::get_recent( 100 );
+$log_entries = Log::get_recent( Log::get_view_row_limit() );
 
 if ( empty( $log_entries ) ) {
 	printf(
@@ -147,8 +147,8 @@ if ( empty( $log_entries ) ) {
 		'<p class="description">%s</p>',
 		esc_html(
 			sprintf(
-				/* translators: %d: number of log entries */
-				__( 'Showing the %d most recent blocked requests.', 'api-rate-limit-now' ),
+				/* translators: %d: number of log entries shown */
+				_n( 'Showing the %d most recent blocked request.', 'Showing the %d most recent blocked requests.', count( $log_entries ), 'api-rate-limit-now' ),
 				count( $log_entries )
 			)
 		)

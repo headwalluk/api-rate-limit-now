@@ -55,6 +55,10 @@ const OPT_LOG_RETENTION   = 'wptarl_log_retention';
 const DEF_LOG_RETENTION   = 7;
 const LOG_MAX_ROWS        = 5000;
 
+// Rows shown on the Log tab, and the most a wptarl_log_view_rows filter may ask for.
+const LOG_VIEW_ROWS     = 100;
+const LOG_VIEW_ROWS_MAX = 1000;
+
 // Longest request URI stored in the log, matching the request_uri column.
 const LOG_REQUEST_URI_MAX_LENGTH = 255;
 

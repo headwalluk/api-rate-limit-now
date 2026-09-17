@@ -103,6 +103,25 @@ Fragments match anywhere in the name, so `key` already covers `consumer_key`, `a
 
 ---
 
+### `wptarl_log_view_rows`
+
+Filter how many of the most recent log entries the **Log** tab shows. Every row is rendered on one page, so keep this modest.
+
+**Parameters:**
+- `int $row_limit` — `100` by default
+
+**Returns:** `int` — Rows to show, newest first. Values above `1000` are reduced to `1000`; anything that isn't a whole number of at least 1 is ignored, and `100` applies.
+
+```php
+add_filter( 'wptarl_log_view_rows', function () {
+    return 250;
+} );
+```
+
+This only changes what's displayed. How long entries are kept is set by *Log retention*, and the table is trimmed to its newest 5,000 rows daily.
+
+---
+
 ### `wptarl_updater_enabled`
 
 Disable the in-plugin GitHub updater. Useful for staging environments, local development, or pinning a site to its current version.

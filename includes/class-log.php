@@ -122,7 +122,7 @@ class Log {
 	 *
 	 * @return array<object> Array of log row objects.
 	 */
-	public static function get_recent( int $limit = 50 ): array {
+	public static function get_recent( int $limit = LOG_VIEW_ROWS ): array {
 		global $wpdb;
 
 		$table_name = self::table_name();
@@ -135,6 +135,33 @@ class Log {
 		);
 
 		return is_array( $results ) ? $results : array();
+	}
+
+	/**
+	 * Get how many of the most recent log entries the Log tab shows.
+	 *
+	 * @since 2.1.1
+	 *
+	 * @return int Between 1 and LOG_VIEW_ROWS_MAX.
+	 */
+	public static function get_view_row_limit(): int {
+		/**
+		 * Filter how many of the most recent log entries the Log tab shows.
+		 *
+		 * @since 2.1.1
+		 *
+		 * @param int $row_limit Rows to show. Default LOG_VIEW_ROWS (100); capped at LOG_VIEW_ROWS_MAX (1000).
+		 */
+		$filtered_limit = apply_filters( 'wptarl_log_view_rows', LOG_VIEW_ROWS );
+
+		if ( is_numeric( $filtered_limit ) && (int) $filtered_limit >= 1 ) {
+			$row_limit = min( (int) $filtered_limit, LOG_VIEW_ROWS_MAX );
+		} else {
+			// Not a positive number; keep the default.
+			$row_limit = LOG_VIEW_ROWS;
+		}
+
+		return $row_limit;
 	}
 
 	/**

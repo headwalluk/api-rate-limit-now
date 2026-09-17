@@ -113,7 +113,7 @@ lists. Treat everything in this table as a contract:
 
 | Contract | Examples | Breaks when |
 |----------|----------|-------------|
-| Filters | `wptarl_rate_limited_ips`, `wptarl_is_client_rate_limited`, `wptarl_seconds_between_api_calls`, `wptarl_redacted_query_params`, `wptarl_updater_enabled` | renamed or removed, or an argument is removed or reordered |
+| Filters | `wptarl_rate_limited_ips`, `wptarl_is_client_rate_limited`, `wptarl_seconds_between_api_calls`, `wptarl_redacted_query_params`, `wptarl_log_view_rows`, `wptarl_updater_enabled` | renamed or removed, or an argument is removed or reordered |
 | Option names | `wptarl_seconds_between_calls`, `wptarl_never_rate_limited_ips` | a constant's **value** changes. Documented as stable for WP-CLI configuration; saved settings under the old name are silently ignored |
 | Stored formats | log table columns, `blocked_at` in site time, comma-separated IP lists, newline-separated user-agent and route lists |
 | Default route exemptions | `DEF_NEVER_RATE_LIMITED_ROUTES` (`wc/store`, `wc-ppcp`) | a default is removed. Sites that never saved the setting silently start limiting shoppers' checkout requests | the format changes with no migration |
