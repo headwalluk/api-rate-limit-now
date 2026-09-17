@@ -34,6 +34,9 @@ The plugin provides filters to customise behaviour:
 * `wptarl_rate_limited_ips` - Modify the list of rate-limited IP addresses
 * `wptarl_is_client_rate_limited` - Override whether the current client is rate-limited
 * `wptarl_seconds_between_api_calls` - Adjust the rate limit interval per client IP
+* `wptarl_redacted_query_params` - Add query parameter names to redact from the log
+* `wptarl_log_view_rows` - Change how many recent entries the Log tab shows
+* `wptarl_updater_enabled` - Turn off updates from GitHub
 
 = Based On =
 
@@ -49,15 +52,15 @@ This plugin is based on the tutorial [Rate-Limit WordPress API Calls](https://wp
 
 = How does it work? =
 
-The plugin hooks into `rest_api_init` and checks the client's IP address. If the client has made a recent API request (tracked via a WordPress transient), the plugin blocks the request with an HTTP 429 response. Otherwise, the request proceeds normally and a transient is created with a short TTL.
+For each real REST API request, the plugin decides from its settings whether the client is rate-limited. A rate-limited client may make one request per interval, tracked with a WordPress transient per IP address. A request inside the interval gets an HTTP 429 response with a Retry-After header saying how many seconds to wait. Page loads, and REST requests made internally while building a page, are never checked.
 
 = Which users are rate-limited? =
 
-By default, all non-logged-in (guest) users are rate-limited. You can change this in the settings to rate-limit only specific IP addresses, or use the `wptarl_is_client_rate_limited` filter for custom logic.
+By default, every client that isn't logged in, except requests to the WooCommerce Store API and PayPal button routes, which shoppers' browsers make during checkout. Integrations using WooCommerce API keys or application passwords count as logged in, so they aren't limited unless you list their User-Agent under "Rate-limited user agents". You can also limit only specific IP addresses, turn off guest limiting to limit only the listed integrations, or use the `wptarl_is_client_rate_limited` filter.
 
 = Does it work behind a reverse proxy or CDN? =
 
-The plugin checks `HTTP_CLIENT_IP`, `HTTP_X_FORWARDED_FOR`, and `REMOTE_ADDR` headers in order. This means it should detect the correct client IP behind most proxies and CDNs.
+The plugin reads `HTTP_CLIENT_IP`, then `HTTP_X_FORWARDED_FOR`, then `REMOTE_ADDR`, and uses the first that holds a single valid IP address. A proxy that sends a list of addresses in `X-Forwarded-For` isn't read, so every visitor appears to come from the proxy. Configure your web server to pass the visitor's address in `REMOTE_ADDR` (nginx `real_ip_module`, Apache `mod_remoteip`, or your CDN's equivalent). The settings page shows the address the plugin sees for you.
 
 = Will it slow down my site? =
 

@@ -89,12 +89,12 @@ moved, and schedules the daily `wptarl_prune_log` event.
 | File | Purpose |
 |------|---------|
 | `api-rate-limit-now.php` | Plugin header, version/file/basename constants, class loading, init, deactivation hook |
-| `constants.php` | Option keys (`OPT_`), defaults (`DEF_`), settings slugs, DB version, log limits |
-| `functions-private.php` | Namespaced helpers: client IP detection, IP list parsing. Private to the plugin |
-| `includes/class-plugin.php` | Hook registration, rate-limit decision and enforcement, Clear Log handler, prune cron callback |
+| `constants.php` | Option keys (`OPT_`), defaults (`DEF_`, incl. the default route exemptions), settings slugs, DB version, log limits and Log tab row limits, `Retry-After` minimum, redacted query-parameter fragments, updater settings |
+| `functions-private.php` | Namespaced helpers, private to the plugin: client IP and User-Agent, IP and line list parsing, current REST route, route prefix normalisation (paste handling), request URI redaction |
+| `includes/class-plugin.php` | Hook registration, `REST_REQUEST` guard, rate-limit decision (IP, route and user-agent matchers) and enforcement with `Retry-After`, Clear Log handler, prune cron callback |
 | `includes/class-settings.php` | Settings API registration and sanitize callbacks |
 | `includes/class-admin-hooks.php` | Settings menu, settings page render, Plugins-screen link, admin asset loading |
-| `includes/class-log.php` | Log table: `dbDelta` creation, insert, recent query, prune, clear |
+| `includes/class-log.php` | Log table: `dbDelta` creation, redacted insert, recent query and Log tab row limit, prune, clear |
 | `admin-templates/settings-page.php` | Settings and Log tabs (code-first template) |
 | `assets/admin/admin.js`, `admin.css` | Tab switching, click-to-copy IP; loaded only on the settings page |
 | `includes/class-github-updater.php` | In-plugin updater: checks GitHub Releases and feeds the WordPress update transient. Holds the `log()` / `log_error()` split described under **Logging** |
@@ -115,8 +115,8 @@ lists. Treat everything in this table as a contract:
 |----------|----------|-------------|
 | Filters | `wptarl_rate_limited_ips`, `wptarl_is_client_rate_limited`, `wptarl_seconds_between_api_calls`, `wptarl_redacted_query_params`, `wptarl_log_view_rows`, `wptarl_updater_enabled` | renamed or removed, or an argument is removed or reordered |
 | Option names | `wptarl_seconds_between_calls`, `wptarl_never_rate_limited_ips` | a constant's **value** changes. Documented as stable for WP-CLI configuration; saved settings under the old name are silently ignored |
-| Stored formats | log table columns, `blocked_at` in site time, comma-separated IP lists, newline-separated user-agent and route lists |
-| Default route exemptions | `DEF_NEVER_RATE_LIMITED_ROUTES` (`wc/store`, `wc-ppcp`) | a default is removed. Sites that never saved the setting silently start limiting shoppers' checkout requests | the format changes with no migration |
+| Stored formats | log table columns, `blocked_at` in site time, comma-separated IP lists, newline-separated user-agent and route lists | the format changes with no migration |
+| Default route exemptions | `DEF_NEVER_RATE_LIMITED_ROUTES` (`wc/store`, `wc-ppcp`) | a default is removed. Sites that never saved the setting silently start limiting shoppers' checkout requests |
 | 429 response | `{ "code": "rate_limited", … }`, `Retry-After` header | the status, `code` or header changes. Clients and monitoring match on them, and well-behaved clients schedule retries from `Retry-After` |
 | Main file path | `api-rate-limit-now/api-rate-limit-now.php` | renamed. WordPress deactivates the plugin on update |
 
@@ -133,7 +133,9 @@ whether anything depends on it, stop and ask.
 These paths decide whether a site's REST API answers:
 
 - `wptarl_client_ip()` — a wrong IP either lets everyone through or makes every visitor share one allowance
-- `Plugin::handle_rate_limiting()`, `is_rate_limited()` and `enforce_rate_limit()`
+- `Plugin::handle_rate_limiting()` (incl. the `REST_REQUEST` guard), `is_rate_limited()` and `enforce_rate_limit()`
+- The matchers: `Plugin::is_route_never_rate_limited()` with `wptarl_current_rest_route()` and `wptarl_normalise_route_prefix()`, and `Plugin::is_user_agent_rate_limited()` — a wrong match refuses shoppers mid-checkout or exempts an abusive client
+- `Plugin::get_retry_after()` — under-reporting sends well-behaved clients straight back into a 429
 
 When a change touches one, say so, test it against the dev site with `curl` (limited and
 exempt clients, logged in and out), and recommend the maintainer read that diff line by line
@@ -262,11 +264,14 @@ do not mix operator and developer material in the same file:
 A change to behaviour, a setting or a filter updates the matching `docs/` page in the same
 commit. Rationale, evidence and history belong in `docs/`, not in code comments.
 
+`CHANGELOG.md` holds per-version release notes (tracked).
+
 Supporting material (private, untracked):
 
 - `dev-notes/00-project-tracker.md` — milestones, deferred features
-- `dev-notes/01-prompts-and-code-housekeeping.md` — the current housekeeping refactor: decisions, findings, stage checklist. Check it before touching a PHP file
-- `CHANGELOG.md` — per-version release notes (tracked)
+- `dev-notes/01-prompts-and-code-housekeeping.md` — the current housekeeping refactor: decisions, findings (F1–F13), style checklist, per-file scorecard, Stage 5 plan, nice-to-haves. Check it before touching a PHP file
+- `dev-notes/02-client-site-api-traffic.md` — investigation of real integration traffic on a client site. **Contains client names, IPs and log extracts**: never copy from it into a tracked file
+- `dev-notes/testing/` — `wp eval-file` harnesses and their `README.md`
 
 <!-- wp-translate:begin v=1.2.0 hash=d8f2f50cf76cdc356af3e990068b37aa947f7012477f3639d41acbfa9db96c36 -->
 ## Translating this plugin (wp-translate conventions)

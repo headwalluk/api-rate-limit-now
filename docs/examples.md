@@ -51,6 +51,32 @@ A well-behaved integration reads `Retry-After` and pages at the pace you set. On
 
 Both integrations running on **one server** share one IP address and so one window. If they need to run at once, give them a longer interval or ask for separate source addresses.
 
+## Limit only chosen integrations
+
+You don't want to limit visitors at all: only a couple of integrations that call the API far more often than they need to.
+
+**Rate-limit all guests:** off
+
+**Rate-limited user agents:**
+
+```
+ExampleInventorySync
+ExampleMailer/1.
+```
+
+**Seconds between API calls:** `2`, short enough for the integrations' normal paging, long enough to stop bursts.
+
+With *Rate-limited IPs* empty and guest limiting off, only requests whose `User-Agent` matches a line are ever limited. Every visitor, shopper, bot and other integration passes unchecked, and *Never rate-limited routes* makes no difference, because nothing else is limited.
+
+| Request | Result |
+|---------|--------|
+| A guest requesting `/wp-json/wp/v2/users` twice in a second | 200, 200 |
+| `ExampleMailer/1.0` fetching customers, then products, in the same second | 200, then 429 with `Retry-After: 3` |
+| `ExampleMailer/1.0` retrying after the 3 seconds it was given | 200 |
+| `ExampleInventorySync/4.2` polling orders every 10 minutes | 200 every time |
+
+The **Log** tab then only shows the listed integrations, which makes it easy to see whether they honour `Retry-After`.
+
 ## Exempt a plugin whose front-end requests are refused
 
 Customers report that a product configurator stops responding. The **Log** tab shows refusals for:
