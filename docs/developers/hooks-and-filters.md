@@ -9,13 +9,13 @@ This is the **public extension surface** of API Rate Limiter. Anything not liste
 
 ## Filters
 
-The first three filters run during the rate-limit check on `rest_api_init`, in this order: `wptarl_rate_limited_ips` → `wptarl_is_client_rate_limited` → `wptarl_seconds_between_api_calls`. Add them from a plugin or mu-plugin, or from your theme's `functions.php`, so they're registered before the REST API starts.
+The first three filters run during the rate-limit check on `rest_api_init`, for real REST requests only (`REST_REQUEST` is true), in this order: `wptarl_rate_limited_ips` → `wptarl_is_client_rate_limited` → `wptarl_seconds_between_api_calls`. Add them from a plugin or mu-plugin, or from your theme's `functions.php`, so they're registered before the REST API starts.
 
 ---
 
 ### `wptarl_rate_limited_ips`
 
-Filter the list of IP addresses to rate-limit. Runs only when the client's IP isn't on the *Never rate-limited IPs* list.
+Filter the list of IP addresses to rate-limit. Runs only when the client's IP isn't on the *Never rate-limited IPs* list, the route isn't on *Never rate-limited routes*, and the user agent isn't on *Rate-limited user agents*.
 
 **Parameters:**
 - `array $ips` — IPs from the *Rate-limited IPs* setting, as an array of strings. Empty by default
@@ -123,6 +123,7 @@ To configure the plugin from code or WP-CLI, write the options WordPress stores 
 | `wptarl_rate_limit_all_guests` | Rate-limit all guests |
 | `wptarl_rate_limited_ips` | Rate-limited IPs (comma-separated) |
 | `wptarl_never_rate_limited_ips` | Never rate-limited IPs (comma-separated) |
+| `wptarl_never_rate_limited_routes` | Never rate-limited routes (newline-separated). When the option doesn't exist, the defaults `wc/store` and `wc-ppcp` apply; an empty string exempts nothing |
 | `wptarl_rate_limited_user_agents` | Rate-limited user agents (newline-separated) |
 | `wptarl_logging_enabled` | Enable logging |
 | `wptarl_log_retention` | Log retention (days) |

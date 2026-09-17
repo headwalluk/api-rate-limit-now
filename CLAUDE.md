@@ -75,9 +75,9 @@ moved, and schedules the daily `wptarl_prune_log` event.
 
 ### Request Flow
 
-1. `rest_api_init` → `Plugin::handle_rate_limiting()`
+1. `rest_api_init` → `Plugin::handle_rate_limiting()`, which returns at once unless `REST_REQUEST` is true (`rest_api_init` also fires for internal `rest_do_request()` calls during page renders)
 2. `wptarl_client_ip()` reads `HTTP_CLIENT_IP`, `HTTP_X_FORWARDED_FOR`, `REMOTE_ADDR` in order; the first single valid IP wins, cached in a global for the request
-3. `Plugin::is_rate_limited()`: never-limited list → rate-limited user agents → rate-limited IPs (`wptarl_rate_limited_ips`) → *all guests* toggle. WooCommerce API-key and application-password requests are already authenticated at this point, so they count as logged in
+3. `Plugin::is_rate_limited()`: never-limited IPs → never-limited routes (segment match on `$wp->query_vars['rest_route']`) → rate-limited user agents → rate-limited IPs (`wptarl_rate_limited_ips`) → *all guests* toggle. WooCommerce API-key and application-password requests are already authenticated at this point, so they count as logged in
 4. `wptarl_is_client_rate_limited` filter has the final say
 5. `Plugin::enforce_rate_limit()`: no transient → set one for `wptarl_seconds_between_api_calls` seconds, holding the window's end time; transient present → `Log::record_block()`, a `Retry-After` header from `get_retry_after()`, and `wp_send_json( …, 429 )`, which exits
 
@@ -112,7 +112,8 @@ lists. Treat everything in this table as a contract:
 |----------|----------|-------------|
 | Filters | `wptarl_rate_limited_ips`, `wptarl_is_client_rate_limited`, `wptarl_seconds_between_api_calls`, `wptarl_updater_enabled` | renamed or removed, or an argument is removed or reordered |
 | Option names | `wptarl_seconds_between_calls`, `wptarl_never_rate_limited_ips` | a constant's **value** changes. Documented as stable for WP-CLI configuration; saved settings under the old name are silently ignored |
-| Stored formats | log table columns, `blocked_at` in site time, comma-separated IP lists, newline-separated user-agent list | the format changes with no migration |
+| Stored formats | log table columns, `blocked_at` in site time, comma-separated IP lists, newline-separated user-agent and route lists |
+| Default route exemptions | `DEF_NEVER_RATE_LIMITED_ROUTES` (`wc/store`, `wc-ppcp`) | a default is removed. Sites that never saved the setting silently start limiting shoppers' checkout requests | the format changes with no migration |
 | 429 response | `{ "code": "rate_limited", … }`, `Retry-After` header | the status, `code` or header changes. Clients and monitoring match on them, and well-behaved clients schedule retries from `Retry-After` |
 | Main file path | `api-rate-limit-now/api-rate-limit-now.php` | renamed. WordPress deactivates the plugin on update |
 

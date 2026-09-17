@@ -6,7 +6,9 @@ API Rate Limiter allows each rate-limited client one REST API request per interv
 
 The check runs on WordPress's `rest_api_init` action, which fires whenever WordPress starts its REST API server. That covers every request to `/wp-json/…` (or `?rest_route=…`), including plugin routes such as WooCommerce's REST and Store APIs.
 
-Normal page loads, the admin area, AJAX (`admin-ajax.php`), WP-CLI and cron don't start the REST server and are never checked.
+Only real REST API requests are checked. Normal page loads, the admin area, AJAX (`admin-ajax.php`), WP-CLI and cron are never checked, and neither are REST requests that WordPress, a theme or a plugin makes internally while building a page (`rest_do_request()`): those run inside the visitor's page load, not as a separate API call.
+
+Some plugins serve REST routes through another URL. A payment plugin that answers `/?wc-ajax=…&path=/…` by handing the request to the REST API is making a real REST request, and it's checked like one.
 
 ## The request flow
 
@@ -23,10 +25,11 @@ A blocked request doesn't create a new transient, so the interval is measured fr
 The decision is made in this order:
 
 1. **Never rate-limited IPs.** An IP on this list is never limited. By default the list holds `127.0.0.1` and `::1`, so the server's own requests are never blocked.
-2. **Rate-limited user agents.** A request whose `User-Agent` header contains one of the listed strings is limited, whether or not the client is logged in.
-3. **Rate-limited IPs.** If this list has any entries, only the IPs on it are limited, whether or not the client is logged in, and the *Rate-limit all guests* setting is not consulted.
-4. **Rate-limit all guests.** If the rate-limited IPs list is empty and this setting is on (the default), every client that isn't logged in is limited.
-5. Otherwise, the client isn't limited.
+2. **Never rate-limited routes.** A request to a listed REST route, or any route below it, is never limited. By default this exempts the WooCommerce Store API and PayPal button requests, which shoppers' browsers make in quick bursts during checkout.
+3. **Rate-limited user agents.** A request whose `User-Agent` header contains one of the listed strings is limited, whether or not the client is logged in.
+4. **Rate-limited IPs.** If this list has any entries, only the IPs on it are limited, whether or not the client is logged in, and the *Rate-limit all guests* setting is not consulted.
+5. **Rate-limit all guests.** If the rate-limited IPs list is empty and this setting is on (the default), every client that isn't logged in is limited.
+6. Otherwise, the client isn't limited.
 
 Developers can change the outcome with the filters in [hooks and filters](developers/hooks-and-filters.md).
 

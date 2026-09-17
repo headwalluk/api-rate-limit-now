@@ -14,6 +14,7 @@ $rate_limit_all_guests  = (bool) filter_var( get_option( OPT_RATE_LIMIT_ALL_GUES
 $rate_limited_ips       = (string) get_option( OPT_RATE_LIMITED_IPS, DEF_RATE_LIMITED_IPS );
 $never_rate_limited_ips = (string) get_option( OPT_NEVER_RATE_LIMITED_IPS, DEF_NEVER_RATE_LIMITED_IPS );
 $rate_limited_agents    = (string) get_option( OPT_RATE_LIMITED_USER_AGENTS, DEF_RATE_LIMITED_USER_AGENTS );
+$never_limited_routes   = (string) get_option( OPT_NEVER_RATE_LIMITED_ROUTES, DEF_NEVER_RATE_LIMITED_ROUTES );
 $logging_enabled        = (bool) filter_var( get_option( OPT_LOGGING_ENABLED, DEF_LOGGING_ENABLED ), FILTER_VALIDATE_BOOLEAN );
 $log_retention          = absint( get_option( OPT_LOG_RETENTION, DEF_LOG_RETENTION ) );
 $client_ip              = wptarl_client_ip();
@@ -85,6 +86,15 @@ printf(
 	esc_html__( 'Never rate-limited IPs', 'api-rate-limit-now' ),
 	esc_textarea( $never_rate_limited_ips ),
 	esc_html__( 'IP addresses that are always exempt from rate limiting, separated by commas or newlines.', 'api-rate-limit-now' )
+);
+
+// Never rate-limited routes.
+printf(
+	'<tr><th scope="row"><label for="%1$s">%2$s</label></th><td><textarea id="%1$s" name="%1$s" rows="4" cols="40" class="large-text code">%3$s</textarea><p class="description">%4$s</p></td></tr>',
+	esc_attr( OPT_NEVER_RATE_LIMITED_ROUTES ),
+	esc_html__( 'Never rate-limited routes', 'api-rate-limit-now' ),
+	esc_textarea( $never_limited_routes ),
+	esc_html__( 'REST API routes that are never rate-limited, one per line, without the /wp-json/ prefix. Each covers the routes below it, so wc/store covers wc/store/v1/cart. The defaults exempt the WooCommerce Store API and PayPal button requests that shoppers make during checkout.', 'api-rate-limit-now' )
 );
 
 // Rate-limited user agents.

@@ -15,6 +15,7 @@ delete_option( 'wptarl_rate_limit_all_guests' );
 delete_option( 'wptarl_rate_limited_ips' );
 delete_option( 'wptarl_never_rate_limited_ips' );
 delete_option( 'wptarl_rate_limited_user_agents' );
+delete_option( 'wptarl_never_rate_limited_routes' );
 delete_option( 'wptarl_logging_enabled' );
 delete_option( 'wptarl_log_retention' );
 delete_option( 'wptarl_db_version' );

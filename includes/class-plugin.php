@@ -109,9 +109,15 @@ class Plugin {
 	 *
 	 * @since 2.0.0
 	 *
-	 * @param \WP_REST_Server $wp_rest_server The REST server instance (unused).
+	 * @param mixed $wp_rest_server The REST server instance (unused).
 	 */
-	public function handle_rate_limiting( \WP_REST_Server $wp_rest_server ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found
+	public function handle_rate_limiting( mixed $wp_rest_server ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found -- Signature fixed by the rest_api_init action.
+		// rest_api_init also fires for internal rest_do_request() calls during a page render; only
+		// rest_api_loaded() defines REST_REQUEST, so this skips everything but real REST requests.
+		if ( ! defined( 'REST_REQUEST' ) || ! REST_REQUEST ) {
+			return;
+		}
+
 		$client_ip              = wptarl_client_ip();
 		$is_client_rate_limited = false;
 		$transient_key          = null;
@@ -145,6 +151,9 @@ class Plugin {
 		if ( in_array( $client_ip, $never_limited_ips, true ) ) {
 			// Never rate-limit these IPs.
 			$is_limited = false;
+		} elseif ( $this->is_route_never_rate_limited() ) {
+			// Never rate-limit these routes, whoever is calling.
+			$is_limited = false;
 		} elseif ( $this->is_user_agent_rate_limited() ) {
 			// A listed User-Agent is limited whether or not the client is logged in.
 			$is_limited = true;
@@ -163,6 +172,34 @@ class Plugin {
 		}
 
 		return $is_limited;
+	}
+
+	/**
+	 * Check whether the current REST route is, or sits below, a route in the never rate-limited routes setting.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @return bool True when the route matches a listed prefix on a whole path segment.
+	 */
+	private function is_route_never_rate_limited(): bool {
+		$is_match = false;
+		$route    = wptarl_current_rest_route();
+
+		if ( '' !== $route ) {
+			$route_prefixes = wptarl_parse_line_list( (string) get_option( OPT_NEVER_RATE_LIMITED_ROUTES, DEF_NEVER_RATE_LIMITED_ROUTES ) );
+
+			foreach ( $route_prefixes as $route_prefix ) {
+				$normalised_prefix = wptarl_normalise_route_prefix( $route_prefix );
+
+				// Segment match, so 'wc/store' covers 'wc/store/v1/cart' but not 'wc/storefront'.
+				if ( '' !== $normalised_prefix && ( $route === $normalised_prefix || str_starts_with( $route, $normalised_prefix . '/' ) ) ) {
+					$is_match = true;
+					break;
+				}
+			}
+		}
+
+		return $is_match;
 	}
 
 	/**

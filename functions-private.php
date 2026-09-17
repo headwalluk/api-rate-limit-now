@@ -107,3 +107,33 @@ function wptarl_parse_line_list( string $raw_lines ): array {
 
 	return array_values( array_unique( array_filter( array_map( 'trim', $lines ), 'strlen' ) ) );
 }
+
+/**
+ * Get the REST route being served, lower-cased and without surrounding slashes, or '' outside a REST request.
+ *
+ * @since 2.1.0
+ *
+ * @return string Route such as 'wc/store/v1/cart'.
+ */
+function wptarl_current_rest_route(): string {
+	$route = '';
+
+	if ( isset( $GLOBALS['wp'] ) && $GLOBALS['wp'] instanceof \WP && isset( $GLOBALS['wp']->query_vars['rest_route'] ) && is_string( $GLOBALS['wp']->query_vars['rest_route'] ) ) {
+		$route = strtolower( trim( $GLOBALS['wp']->query_vars['rest_route'], '/' ) );
+	}
+
+	return $route;
+}
+
+/**
+ * Normalise a route prefix for matching: lower-cased, without surrounding slashes or whitespace.
+ *
+ * @since 2.1.0
+ *
+ * @param string $route_prefix Route prefix as entered, e.g. '/wc/store/'.
+ *
+ * @return string Normalised prefix, e.g. 'wc/store'.
+ */
+function wptarl_normalise_route_prefix( string $route_prefix ): string {
+	return strtolower( trim( $route_prefix, " \t/" ) );
+}

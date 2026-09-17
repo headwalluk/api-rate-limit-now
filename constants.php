@@ -10,11 +10,12 @@ namespace Api_Rate_Limiter;
 defined( 'ABSPATH' ) || die();
 
 // Option keys (wp_options) - prefix with OPT_.
-const OPT_SECONDS_BETWEEN_CALLS    = 'wptarl_seconds_between_calls';
-const OPT_RATE_LIMIT_ALL_GUESTS    = 'wptarl_rate_limit_all_guests';
-const OPT_RATE_LIMITED_IPS         = 'wptarl_rate_limited_ips';
-const OPT_NEVER_RATE_LIMITED_IPS   = 'wptarl_never_rate_limited_ips';
-const OPT_RATE_LIMITED_USER_AGENTS = 'wptarl_rate_limited_user_agents';
+const OPT_SECONDS_BETWEEN_CALLS     = 'wptarl_seconds_between_calls';
+const OPT_RATE_LIMIT_ALL_GUESTS     = 'wptarl_rate_limit_all_guests';
+const OPT_RATE_LIMITED_IPS          = 'wptarl_rate_limited_ips';
+const OPT_NEVER_RATE_LIMITED_IPS    = 'wptarl_never_rate_limited_ips';
+const OPT_RATE_LIMITED_USER_AGENTS  = 'wptarl_rate_limited_user_agents';
+const OPT_NEVER_RATE_LIMITED_ROUTES = 'wptarl_never_rate_limited_routes';
 
 // Default values - prefix with DEF_.
 const DEF_SECONDS_BETWEEN_CALLS    = 10;
@@ -22,6 +23,8 @@ const DEF_RATE_LIMIT_ALL_GUESTS    = true;
 const DEF_RATE_LIMITED_IPS         = '';
 const DEF_NEVER_RATE_LIMITED_IPS   = '127.0.0.1, ::1';
 const DEF_RATE_LIMITED_USER_AGENTS = '';
+// WooCommerce Store API (shopper cart/checkout) and Payment Plugins for PayPal button requests.
+const DEF_NEVER_RATE_LIMITED_ROUTES = "wc/store\nwc-ppcp";
 
 // Transient key prefix. The value is the Unix time the client's window ends.
 const TRANSIENT_PREFIX = 'wptarl_';

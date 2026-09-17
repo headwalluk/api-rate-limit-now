@@ -20,6 +20,7 @@ API Rate Limiter is a lightweight plugin that uses WordPress transients to throt
 * Configurable rate limit interval (seconds between allowed calls)
 * Option to rate-limit all non-logged-in users or specific IPs only
 * IP allowlist to exempt specific addresses from rate limiting
+* Route allowlist, with shoppers' WooCommerce Store API and PayPal button requests exempt by default
 * Always rate-limit chosen integrations by User-Agent, including ones that authenticate with API keys
 * Tabbed admin settings page for easy configuration (no code editing required)
 * Request logging with configurable retention (blocked requests only, zero impact on normal traffic)
@@ -70,6 +71,8 @@ No. The plugin uses WordPress transients, which are very fast (especially with a
 == Changelog ==
 
 = 2.1.0 =
+* Added a "Never rate-limited routes" setting; by default shoppers' WooCommerce Store API and PayPal button requests are no longer rate-limited
+* Fixed internal REST requests made during a page load being rate-limited, which could cut a page off with a 429 response
 * Added a Retry-After header to every 429 response, giving the seconds until the client may try again
 * Added a "Rate-limited user agents" setting to always rate-limit chosen integrations, including ones that authenticate with API keys
 * Added automatic updates from GitHub releases, with a wptarl_updater_enabled filter to turn them off
@@ -92,7 +95,7 @@ No. The plugin uses WordPress transients, which are very fast (especially with a
 == Upgrade Notice ==
 
 = 2.1.0 =
-The plugin's main file has been renamed, so WordPress deactivates the plugin during this update. Reactivate it under Plugins; settings and the log are kept. Future updates install automatically from GitHub.
+The plugin's main file has been renamed, so WordPress deactivates the plugin during this update. Reactivate it under Plugins; settings and the log are kept. The WooCommerce Store API is no longer rate-limited by default; see "Never rate-limited routes". Future updates install automatically from GitHub.
 
 = 2.0.0 =
 Major update. Configuration has moved from PHP constants to the WordPress settings page. Previous constant-based configuration will no longer apply after updating.

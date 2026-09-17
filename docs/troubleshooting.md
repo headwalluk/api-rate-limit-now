@@ -5,7 +5,7 @@
 1. Open **Settings → API Rate Limiter → Log** and find the blocked requests. The request URI shows which feature was calling the API.
 2. Decide how to let it through:
    - The requests come from a fixed address (a headless front end, an integration partner, a monitoring service): add that IP to **Never rate-limited IPs**.
-   - Real visitors trigger them (a block-based WooCommerce checkout, a search-as-you-type widget): lower **Seconds between API calls**. See [choosing an interval](configuration.md#choosing-an-interval).
+   - Real visitors' browsers trigger them (payment buttons, a cart widget, search-as-you-type): add the route to **Never rate-limited routes**. See [never rate-limited routes](configuration.md#never-rate-limited-routes). If a route can't be exempted, lower **Seconds between API calls** instead.
    - The caller is recognisable some other way, such as an API key header: a developer can exempt it with the `wptarl_is_client_rate_limited` filter. See [hooks and filters](developers/hooks-and-filters.md).
    - The same client appears several times within a second or two: it is retrying immediately instead of waiting for the `Retry-After` time sent with each 429. That is a fault in the client, not the site. Ask its developer to honour `Retry-After`.
 

@@ -66,6 +66,16 @@ class Settings {
 
 		register_setting(
 			SETTINGS_GROUP,
+			OPT_NEVER_RATE_LIMITED_ROUTES,
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => array( $this, 'sanitize_route_list' ),
+				'default'           => DEF_NEVER_RATE_LIMITED_ROUTES,
+			)
+		);
+
+		register_setting(
+			SETTINGS_GROUP,
 			OPT_RATE_LIMITED_USER_AGENTS,
 			array(
 				'type'              => 'string',
@@ -170,6 +180,22 @@ class Settings {
 		}
 
 		return implode( ', ', $validated_ips );
+	}
+
+	/**
+	 * Sanitize the route list to one normalised, unique route prefix per line.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param mixed $value Raw input value.
+	 *
+	 * @return string Newline-separated route prefixes, e.g. "wc/store\nwc-ppcp".
+	 */
+	public function sanitize_route_list( mixed $value ): string {
+		$raw_lines   = is_string( $value ) ? $value : '';
+		$route_lines = array_map( __NAMESPACE__ . '\wptarl_normalise_route_prefix', wptarl_parse_line_list( sanitize_textarea_field( $raw_lines ) ) );
+
+		return implode( "\n", array_values( array_unique( array_filter( $route_lines, 'strlen' ) ) ) );
 	}
 
 	/**
