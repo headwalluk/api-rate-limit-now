@@ -57,4 +57,4 @@ The IP shown at the top of the settings page is the address the plugin sees for 
 
 ## The plugin was deactivated after an update
 
-The first release after 2.0.0 renamed the plugin's main file from `api-rate-limiter-now.php` to `api-rate-limit-now.php`. WordPress tracks active plugins by file name, so it deactivates the plugin during that update. Reactivate it under **Plugins**; settings and the log are unaffected.
+Version 2.1.0 renamed the plugin's main file from `api-rate-limiter-now.php` to `api-rate-limit-now.php`. WordPress tracks active plugins by file name, so it deactivates the plugin during that update. Reactivate it under **Plugins**; settings and the log are unaffected.

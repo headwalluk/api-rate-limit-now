@@ -2,9 +2,9 @@
 Contributors: headwalluk
 Tags: api, rate-limit, rest-api, throttle, security
 Requires at least: 6.0
-Tested up to: 6.7
+Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 2.0.0
+Stable tag: 2.1.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -69,6 +69,13 @@ No. The plugin uses WordPress transients, which are very fast (especially with a
 
 == Changelog ==
 
+= 2.1.0 =
+* Added a Retry-After header to every 429 response, giving the seconds until the client may try again
+* Added a "Rate-limited user agents" setting to always rate-limit chosen integrations, including ones that authenticate with API keys
+* Added automatic updates from GitHub releases, with a wptarl_updater_enabled filter to turn them off
+* Changed the main plugin file to api-rate-limit-now.php and the text domain to api-rate-limit-now
+* Added Requires at least and Requires PHP headers
+
 = 2.0.0 =
 * Complete rewrite with multi-file architecture
 * Added tabbed admin settings page (Settings > API Rate Limiter)
@@ -83,6 +90,9 @@ No. The plugin uses WordPress transients, which are very fast (especially with a
 * Initial public release based on tutorial code
 
 == Upgrade Notice ==
+
+= 2.1.0 =
+The plugin's main file has been renamed, so WordPress deactivates the plugin during this update. Reactivate it under Plugins; settings and the log are kept. Future updates install automatically from GitHub.
 
 = 2.0.0 =
 Major update. Configuration has moved from PHP constants to the WordPress settings page. Previous constant-based configuration will no longer apply after updating.

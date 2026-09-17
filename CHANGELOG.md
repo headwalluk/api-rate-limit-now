@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-09-17
+
 ### Added
 
 - **A `Retry-After` header on every 429**, giving the whole seconds until the client may make its next request. Clients that honour it back off exactly as long as needed; the status code and JSON body are unchanged. The rate-limit transient now stores when the client's window ends, rather than `1`.
