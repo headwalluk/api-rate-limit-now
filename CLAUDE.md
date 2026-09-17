@@ -113,7 +113,7 @@ lists. Treat everything in this table as a contract:
 
 | Contract | Examples | Breaks when |
 |----------|----------|-------------|
-| Filters | `wptarl_rate_limited_ips`, `wptarl_is_client_rate_limited`, `wptarl_seconds_between_api_calls`, `wptarl_updater_enabled` | renamed or removed, or an argument is removed or reordered |
+| Filters | `wptarl_rate_limited_ips`, `wptarl_is_client_rate_limited`, `wptarl_seconds_between_api_calls`, `wptarl_redacted_query_params`, `wptarl_updater_enabled` | renamed or removed, or an argument is removed or reordered |
 | Option names | `wptarl_seconds_between_calls`, `wptarl_never_rate_limited_ips` | a constant's **value** changes. Documented as stable for WP-CLI configuration; saved settings under the old name are silently ignored |
 | Stored formats | log table columns, `blocked_at` in site time, comma-separated IP lists, newline-separated user-agent and route lists |
 | Default route exemptions | `DEF_NEVER_RATE_LIMITED_ROUTES` (`wc/store`, `wc-ppcp`) | a default is removed. Sites that never saved the setting silently start limiting shoppers' checkout requests | the format changes with no migration |
@@ -170,6 +170,7 @@ before tagging. A review by an AI agent, your own included, does not count as th
 - Escape all output at the point of output (`esc_html()`, `esc_attr()`, `esc_url()`, `esc_textarea()`)
 - Verify a nonce and check `current_user_can()` on every state-changing request
 - `$wpdb->prepare()` for every query with a variable; the table name is the one interpolation, from `Log::table_name()`
+- **Never store or display credentials.** Anything request-derived that is persisted (today: the logged request URI) goes through `wptarl_redact_request_uri()` **before** sanitizing and truncating. Integrations still send secrets in query strings
 
 ### Template Pattern (Code-First)
 

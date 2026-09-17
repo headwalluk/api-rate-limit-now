@@ -120,6 +120,8 @@ If you're unsure, start with the default and watch the **Log** tab for requests 
 
 The **Log** tab lists the 100 most recent refused requests: IP address, time and request URI. **Clear Log** deletes every entry. Entries are also deleted automatically after the retention period.
 
+Credential-like query values, such as `consumer_secret` or `oauth_signature`, appear as `REDACTED`. See [logging](how-it-works.md#logging). Entries logged by version 2.1.0 or earlier weren't redacted, so clear the log after updating if an integration sends credentials in its URLs.
+
 A request URI can be pasted straight into *Never rate-limited routes* if the request turns out to be legitimate. See [what you can paste](#what-you-can-paste).
 
 ## WooCommerce

@@ -162,3 +162,58 @@ function wptarl_normalise_route_prefix( string $route_prefix ): string {
 
 	return $route_path;
 }
+
+/**
+ * Replace the values of credential-like query parameters in a request URI, leaving names and other parameters intact.
+ *
+ * @since 2.1.1
+ *
+ * @param string $request_uri Raw request URI, e.g. '/wp-json/wc/v3/orders?consumer_key=ck_1&page=2'.
+ *
+ * @return string URI with sensitive values replaced, e.g. '/wp-json/wc/v3/orders?consumer_key=REDACTED&page=2'.
+ */
+function wptarl_redact_request_uri( string $request_uri ): string {
+	$redacted_uri   = $request_uri;
+	$query_position = strpos( $request_uri, '?' );
+
+	if ( false !== $query_position ) {
+		/**
+		 * Filter the name fragments that mark a query parameter as sensitive in the log.
+		 *
+		 * A parameter is redacted when its URL-decoded, lower-cased name contains any fragment.
+		 *
+		 * @since 2.1.1
+		 *
+		 * @param array<string> $name_fragments Lower-case fragments. Default REDACTED_QUERY_PARAM_FRAGMENTS.
+		 */
+		$name_fragments = apply_filters( 'wptarl_redacted_query_params', REDACTED_QUERY_PARAM_FRAGMENTS );
+
+		if ( ! is_array( $name_fragments ) ) {
+			$name_fragments = REDACTED_QUERY_PARAM_FRAGMENTS;
+		}
+
+		$query_pairs = explode( '&', substr( $request_uri, $query_position + 1 ) );
+
+		foreach ( $query_pairs as $pair_index => $query_pair ) {
+			$equals_position = strpos( $query_pair, '=' );
+
+			if ( false === $equals_position ) {
+				// A bare name carries no value to redact.
+				continue;
+			}
+
+			$param_name = strtolower( rawurldecode( substr( $query_pair, 0, $equals_position ) ) );
+
+			foreach ( $name_fragments as $name_fragment ) {
+				if ( is_string( $name_fragment ) && '' !== $name_fragment && str_contains( $param_name, strtolower( $name_fragment ) ) ) {
+					$query_pairs[ $pair_index ] = substr( $query_pair, 0, $equals_position + 1 ) . REDACTED_QUERY_VALUE;
+					break;
+				}
+			}
+		}
+
+		$redacted_uri = substr( $request_uri, 0, $query_position + 1 ) . implode( '&', $query_pairs );
+	}
+
+	return $redacted_uri;
+}

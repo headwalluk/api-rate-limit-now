@@ -4,7 +4,7 @@ Tags: api, rate-limit, rest-api, throttle, security
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 2.1.0
+Stable tag: 2.1.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -70,6 +70,11 @@ No. The plugin uses WordPress transients, which are very fast (especially with a
 
 == Changelog ==
 
+= 2.1.1 =
+* Security: credential values in logged request URLs (consumer_secret, oauth_signature, tokens, nonces and similar) are now redacted before they are stored
+* Added the wptarl_redacted_query_params filter
+* Fixed long request URIs being cut mid-character in the log
+
 = 2.1.0 =
 * Added a "Never rate-limited routes" setting; by default shoppers' WooCommerce Store API and PayPal button requests are no longer rate-limited
 * Fixed internal REST requests made during a page load being rate-limited, which could cut a page off with a 429 response
@@ -93,6 +98,9 @@ No. The plugin uses WordPress transients, which are very fast (especially with a
 * Initial public release based on tutorial code
 
 == Upgrade Notice ==
+
+= 2.1.1 =
+Security fix. Blocked requests carrying API credentials in their URL were logged with those credentials. After updating, clear the log under Settings > API Rate Limiter > Log, and rotate any API key that appeared in it.
 
 = 2.1.0 =
 The plugin's main file has been renamed, so WordPress deactivates the plugin during this update. Reactivate it under Plugins; settings and the log are kept. The WooCommerce Store API is no longer rate-limited by default; see "Never rate-limited routes". Future updates install automatically from GitHub.

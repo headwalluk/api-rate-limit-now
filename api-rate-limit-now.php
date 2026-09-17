@@ -3,7 +3,7 @@
  * Plugin Name:       API Rate Limiter
  * Plugin URI:        https://wp-tutorials.tech/optimise-wordpress/rate-limit-wordpress-api-calls/
  * Description:       Rate-limit REST API calls by client IP address.
- * Version:           2.1.0
+ * Version:           2.1.1
  * Requires at least: 6.0
  * Requires PHP:      8.0
  * Author:            Paul Faulkner
@@ -17,7 +17,7 @@
 
 defined( 'ABSPATH' ) || die();
 
-define( 'WPTARL_VERSION', '2.1.0' );
+define( 'WPTARL_VERSION', '2.1.1' );
 define( 'WPTARL_FILE', __FILE__ );
 define( 'WPTARL_BASENAME', plugin_basename( __FILE__ ) );
 

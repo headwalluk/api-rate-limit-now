@@ -82,6 +82,27 @@ add_filter( 'wptarl_seconds_between_api_calls', function ( $seconds, $client_ip 
 
 ---
 
+### `wptarl_redacted_query_params`
+
+Filter which query parameters have their values redacted before a refused request's URI is written to the log. A parameter is redacted when its URL-decoded, lower-cased name **contains** any fragment in the list.
+
+**Parameters:**
+- `array $name_fragments` — Lower-case strings. Default `key`, `secret`, `token`, `password`, `passwd`, `nonce`, `signature`, `oauth`, `session`, `credential`
+
+**Returns:** `array` — Strings to look for. A return value that isn't an array is ignored, and the defaults apply.
+
+```php
+// Also redact a licence code sent by a custom integration.
+add_filter( 'wptarl_redacted_query_params', function ( $name_fragments ) {
+    $name_fragments[] = 'licence';
+    return $name_fragments;
+} );
+```
+
+Fragments match anywhere in the name, so `key` already covers `consumer_key`, `api_key` and `oauth_consumer_key`. Removing a default fragment lets those values back into the log; don't, unless you're sure nothing sensitive uses that name.
+
+---
+
 ### `wptarl_updater_enabled`
 
 Disable the in-plugin GitHub updater. Useful for staging environments, local development, or pinning a site to its current version.

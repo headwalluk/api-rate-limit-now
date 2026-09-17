@@ -55,6 +55,13 @@ const OPT_LOG_RETENTION   = 'wptarl_log_retention';
 const DEF_LOG_RETENTION   = 7;
 const LOG_MAX_ROWS        = 5000;
 
+// Longest request URI stored in the log, matching the request_uri column.
+const LOG_REQUEST_URI_MAX_LENGTH = 255;
+
+// Query parameters whose (decoded, lower-cased) name contains any of these have their value redacted in the log.
+const REDACTED_QUERY_PARAM_FRAGMENTS = array( 'key', 'secret', 'token', 'password', 'passwd', 'nonce', 'signature', 'oauth', 'session', 'credential' );
+const REDACTED_QUERY_VALUE           = 'REDACTED';
+
 // GitHub updater. A failed lookup is cached for the shorter failure TTL.
 const UPDATER_GITHUB_REPO       = 'headwalluk/api-rate-limit-now';
 const UPDATER_CACHE_KEY         = 'wptarl_github_release';

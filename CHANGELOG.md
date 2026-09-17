@@ -8,6 +8,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [2.1.1] - 2026-09-17
+
+### Security
+
+- **Credentials in request URLs were stored in the log.** Blocked requests were logged with their full query string, so an integration authenticating with query-string credentials (WooCommerce's legacy `consumer_key` / `consumer_secret` parameters, or OAuth 1.0a `oauth_*` parameters) had its API secret written to the log table and shown on the **Log** tab. Values of parameters whose names contain `key`, `secret`, `token`, `password`, `passwd`, `nonce`, `signature`, `oauth`, `session` or `credential` are now replaced with `REDACTED` before the entry is stored. Existing log entries are not changed: **clear the log** (Settings → API Rate Limiter → Log → Clear Log) after updating, and rotate any API key that appears in it. Introduced in 2.0.0.
+
+### Added
+
+- The `wptarl_redacted_query_params` filter, to add name fragments to redact.
+
+### Fixed
+
+- Long request URIs were truncated by byte count, which could split a multi-byte character and make the log insert fail. They are now truncated by character.
+
 ## [2.1.0] - 2026-09-17
 
 ### Added

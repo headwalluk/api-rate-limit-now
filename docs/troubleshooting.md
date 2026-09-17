@@ -65,6 +65,17 @@ The IP shown at the top of the settings page is the address the plugin sees for 
   wp option delete wptarl_db_version
   ```
 
+## An API secret appears in the log
+
+Versions before 2.1.1 logged request URIs in full, including credentials some integrations send in the query string (`consumer_secret=cs_…`). To clean up:
+
+1. Update to 2.1.1 or later, which redacts them.
+2. **Clear Log** under **Settings → API Rate Limiter → Log**.
+3. Treat the secret as exposed: in WooCommerce → Settings → Advanced → REST API, revoke the key and issue the integration a new one.
+4. Ask the integration's developer to authenticate with an `Authorization` header instead of URL parameters. Your web server's access log records every URL, and no plugin can redact that.
+
+To redact another parameter name, see the `wptarl_redacted_query_params` filter in [hooks and filters](developers/hooks-and-filters.md).
+
 ## Updates aren't appearing
 
 1. Check the plugin version under **Plugins**. Versions up to and including 2.0.0 have no updater: install a newer release manually once, and later updates arrive automatically.

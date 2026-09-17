@@ -90,13 +90,14 @@ class Log {
 
 		global $wpdb;
 
+		// Redact before sanitizing and truncating: sanitize_text_field() strips %XX octets from names, and
+		// truncating first could cut a parameter name short and let its value through.
 		$request_uri = isset( $_SERVER['REQUEST_URI'] )
-			? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) )
+			? sanitize_text_field( wptarl_redact_request_uri( wp_unslash( $_SERVER['REQUEST_URI'] ) ) ) // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Sanitized by sanitize_text_field() after redaction.
 			: '';
 
-		// Truncate to fit the column.
-		if ( strlen( $request_uri ) > 255 ) {
-			$request_uri = substr( $request_uri, 0, 255 );
+		if ( mb_strlen( $request_uri ) > LOG_REQUEST_URI_MAX_LENGTH ) {
+			$request_uri = mb_substr( $request_uri, 0, LOG_REQUEST_URI_MAX_LENGTH );
 		}
 
 		$now = new \DateTime( 'now', wp_timezone() );

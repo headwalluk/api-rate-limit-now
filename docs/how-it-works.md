@@ -69,6 +69,15 @@ Content-Type: application/json; charset=UTF-8
 
 When logging is enabled, each refused request is written to a database table (`{prefix}wptarl_log`) with the client IP, the time and the request URI. Allowed requests are never logged, so normal traffic adds no database writes.
 
+Credentials in the request URI are never stored. Any query parameter whose name contains `key`, `secret`, `token`, `password`, `passwd`, `nonce`, `signature`, `oauth`, `session` or `credential` (ignoring case) has its value replaced with `REDACTED`, keeping the parameter's name:
+
+```
+/wp-json/wc/v3/products?consumer_key=ck_…&consumer_secret=cs_…&page=2      ← request
+/wp-json/wc/v3/products?consumer_key=REDACTED&consumer_secret=REDACTED&page=2  ← logged
+```
+
+Parameters with other names are logged as sent, and the stored URI is cut to 255 characters. This protects this plugin's log only: your web server's access log still records full URLs. Integrations that send credentials in the URL should use an `Authorization` header instead.
+
 The **Log** tab on the settings page shows the 100 most recent entries. Times are in the site's timezone. A daily scheduled task deletes entries older than the retention period, and trims the table to its newest 5,000 rows.
 
 ## Performance
