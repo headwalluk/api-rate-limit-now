@@ -184,7 +184,7 @@ class Plugin {
 
 			$response = array(
 				'code'    => 'rate_limited',
-				'message' => __( 'Too many requests. Please slow down.', 'api-rate-limiter-now' ),
+				'message' => __( 'Too many requests. Please slow down.', 'api-rate-limit-now' ),
 			);
 
 			wp_send_json( $response, 429 );

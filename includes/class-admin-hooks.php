@@ -44,8 +44,8 @@ class Admin_Hooks {
 	 */
 	public function add_menu_items(): void {
 		add_options_page(
-			__( 'API Rate Limiter', 'api-rate-limiter-now' ),
-			__( 'API Rate Limiter', 'api-rate-limiter-now' ),
+			__( 'API Rate Limiter', 'api-rate-limit-now' ),
+			__( 'API Rate Limiter', 'api-rate-limit-now' ),
 			'manage_options',
 			ADMIN_MENU_SLUG,
 			array( $this, 'render_settings_page' )
@@ -78,7 +78,7 @@ class Admin_Hooks {
 		$settings_link = sprintf(
 			'<a href="%s">%s</a>',
 			esc_url( admin_url( 'options-general.php?page=' . ADMIN_MENU_SLUG ) ),
-			esc_html__( 'Settings', 'api-rate-limiter-now' )
+			esc_html__( 'Settings', 'api-rate-limit-now' )
 		);
 
 		array_unshift( $links, $settings_link );
@@ -117,7 +117,7 @@ class Admin_Hooks {
 			'wptarl-admin',
 			'wptarlAdmin',
 			array(
-				'copiedText' => __( 'copied!', 'api-rate-limiter-now' ),
+				'copiedText' => __( 'copied!', 'api-rate-limit-now' ),
 			)
 		);
 	}
