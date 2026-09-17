@@ -8,105 +8,39 @@
 
 Rate-limit WordPress REST API calls by client IP address.
 
-Lightweight plugin that uses WordPress transients to throttle REST API requests. When a rate-limited client makes requests too frequently, the plugin returns an HTTP 429 (Too Many Requests) response.
+A lightweight plugin that uses WordPress transients to throttle REST API requests. When a rate-limited client makes requests too frequently, it gets an HTTP 429 (Too Many Requests) response.
 
-## Features
+## What it does
 
-- Rate-limit REST API calls by client IP address
-- Configurable rate limit interval (seconds between allowed calls)
-- Option to rate-limit all non-logged-in users or specific IPs only
-- IP allowlist to exempt specific addresses from rate limiting
-- Tabbed admin settings page for easy configuration (no code editing required)
-- Request logging with configurable retention (blocked requests only, zero impact on normal traffic)
-- Extensibility via WordPress filters
-- Clean uninstall (removes all options and data)
+- Rate-limits REST API calls by client IP address, including WooCommerce's REST and Store APIs
+- Limits every visitor who isn't logged in, or only a list of specific IPs
+- Exempts trusted IPs, with localhost exempt by default
+- Configured from a settings page, with no code editing
+- Logs blocked requests, with configurable retention. Allowed requests are never logged, so normal traffic is unaffected
+- Filters for developers to customise who is limited and how often
+- Removes all its settings and data when deleted
 
-## Requirements
+## Install
+
+1. Download `api-rate-limit-now.zip` from the [latest release](https://github.com/headwalluk/api-rate-limit-now/releases/latest)
+2. WordPress admin → Plugins → Add New → Upload Plugin → choose the zip → Install Now → Activate
+3. Settings → API Rate Limiter to configure
+
+### Requirements
 
 - WordPress 6.0 or later
 - PHP 8.0 or later
 
-## Installation
+## Documentation
 
-1. Upload the `api-rate-limit-now` directory to `/wp-content/plugins/`
-2. Activate the plugin through the WordPress Plugins screen
-3. Configure settings under **Settings > API Rate Limiter**
+Full user and developer documentation lives in [`docs/`](docs/):
 
-## Configuration
+- [How it works](docs/how-it-works.md)
+- [Configuration](docs/configuration.md)
+- [Troubleshooting](docs/troubleshooting.md)
+- [Hooks and filters](docs/developers/hooks-and-filters.md) *(for developers)*
 
-All settings are managed from the WordPress admin dashboard under **Settings > API Rate Limiter**:
-
-- **Seconds between API calls** - Minimum interval between requests from the same IP (default: 10)
-- **Rate-limit all guests** - When enabled, all non-logged-in users are rate-limited (default: enabled)
-- **Rate-limited IPs** - Specific IP addresses to rate-limit (used when "Rate-limit all guests" is disabled)
-- **Never rate-limited IPs** - IP addresses exempt from rate limiting (default: 127.0.0.1, ::1)
-- **Enable logging** - Log blocked API requests to the Log tab (default: enabled)
-- **Log retention** - Number of days to keep log entries (default: 7)
-
-## WooCommerce
-
-This plugin works with WooCommerce out of the box. WooCommerce's REST API (`/wp-json/wc/`) and Store API (`/wp-json/wc/store/`) are standard WordPress REST API routes, so they are automatically protected by this plugin.
-
-This is particularly useful for WooCommerce sites that are targeted by bots scraping product data, brute-forcing coupon codes, or spamming checkout endpoints.
-
-**Headless storefronts:** If you are running a headless WooCommerce setup where your frontend makes rapid legitimate API calls, you may want to lower the rate limit interval (e.g. 2-3 seconds) or use the `wptarl_is_client_rate_limited` filter to exempt authenticated API consumers.
-
-## Choosing the Right Interval
-
-The default interval of 10 seconds works well for most sites, but the right value depends on your use case:
-
-- **Standard WordPress sites** - 10-30 seconds is usually fine. Most legitimate visitors don't make rapid API calls.
-- **WooCommerce stores** - 5-10 seconds balances protection against bots with a smooth shopping experience.
-- **Headless / decoupled frontends** - 1-3 seconds, or consider exempting known frontend IPs via the "Never rate-limited IPs" setting.
-- **High-traffic APIs** - Use the `wptarl_seconds_between_api_calls` filter to set different limits per endpoint or client.
-
-If you're unsure, start with the default and check the **Log** tab to see if legitimate requests are being blocked.
-
-## Filters
-
-The plugin provides filters for developers to customise behaviour from a theme or plugin.
-
-### `wptarl_rate_limited_ips`
-
-Modify the array of IP addresses that should be rate-limited. Only used when "Rate-limit all guests" is disabled.
-
-```php
-add_filter( 'wptarl_rate_limited_ips', function ( array $ips ): array {
-    // Add an IP to the rate-limited list.
-    $ips[] = '203.0.113.50';
-    return $ips;
-} );
-```
-
-### `wptarl_is_client_rate_limited`
-
-Override whether the current client is rate-limited. Receives a boolean after the plugin has made its own determination, so you can apply custom logic.
-
-```php
-add_filter( 'wptarl_is_client_rate_limited', function ( bool $is_limited ): bool {
-    // Never rate-limit requests that include a valid API key.
-    if ( ! empty( $_SERVER['HTTP_X_API_KEY'] ) && $_SERVER['HTTP_X_API_KEY'] === MY_API_KEY ) {
-        $is_limited = false;
-    }
-    return $is_limited;
-} );
-```
-
-### `wptarl_seconds_between_api_calls`
-
-Adjust the rate limit interval. Receives the configured seconds value and the client IP, so you can set different limits per IP.
-
-```php
-add_filter( 'wptarl_seconds_between_api_calls', function ( int $seconds, string $client_ip ): int {
-    // Allow a known partner IP to make faster requests.
-    if ( '198.51.100.10' === $client_ip ) {
-        $seconds = 2;
-    }
-    return $seconds;
-}, 10, 2 );
-```
-
-## Based On
+## Based on
 
 This plugin is based on the tutorial [Rate-Limit WordPress API Calls](https://wp-tutorials.tech/optimise-wordpress/rate-limit-wordpress-api-calls/) by Paul Faulkner.
 

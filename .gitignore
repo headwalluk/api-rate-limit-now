@@ -1,4 +1,22 @@
-vendor/
-node_modules/
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.idea/
 .vscode/
+
+# Dependencies
+node_modules/
+vendor/
+
+# Build output and release zips
+build/
+*.zip
+
 *.log
+
+# Private development notes. Never published: may contain client site names and
+# unredacted diagnostics. Backed up with the dev site, and blocked from remote
+# access by dev-notes/.htaccess.
+dev-notes/
