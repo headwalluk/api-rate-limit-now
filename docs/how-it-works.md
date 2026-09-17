@@ -16,7 +16,7 @@ Normal page loads, the admin area, AJAX (`admin-ajax.php`), WP-CLI and cron don'
    - No transient: the request proceeds, and a transient is created that expires after the configured interval.
    - A transient exists: the request is blocked with a 429 response and, if logging is on, recorded in the log.
 
-A blocked request doesn't create a new transient, so the interval is measured from the last request that was allowed, not the last one attempted.
+A blocked request doesn't create a new transient, so the interval is measured from the last request that was allowed, not the last one attempted. A client that waits for the `Retry-After` seconds on its 429 is always allowed on its next request.
 
 ## Who is rate-limited
 
@@ -38,7 +38,13 @@ To limit an integration that authenticates, add a string from its `User-Agent` t
 
 ## What a blocked client sees
 
-An HTTP 429 status with a JSON body:
+An HTTP 429 status, a `Retry-After` header giving the whole seconds until the client's window ends, and a JSON body:
+
+```http
+HTTP/1.1 429 Too Many Requests
+Retry-After: 7
+Content-Type: application/json; charset=UTF-8
+```
 
 ```json
 {

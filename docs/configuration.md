@@ -33,7 +33,7 @@ This is the way to limit an integration that authenticates with API keys, which 
 
 A `User-Agent` is chosen by the client, so this identifies well-behaved integrations. It doesn't stop a client that is trying to avoid the limit.
 
-Before listing an integration, check how fast it legitimately calls the API. One that pages through products or orders faster than the interval has every request after the first refused until the interval passes, and may abandon the sync. Match the interval to its paging speed, or leave it off the list.
+Before listing an integration, check how fast it legitimately calls the API. One that pages through products or orders faster than the interval has every request after the first refused until the interval passes. Every 429 carries a `Retry-After` header saying how long to wait, so a well-built client slows down and completes its sync. A client that ignores it and retries immediately is refused again each time, which shows up as bursts of blocked requests on the **Log** tab — raise that with the integration's developer.
 
 ## Choosing an interval
 

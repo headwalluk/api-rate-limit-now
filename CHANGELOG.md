@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- **A `Retry-After` header on every 429**, giving the whole seconds until the client may make its next request. Clients that honour it back off exactly as long as needed; the status code and JSON body are unchanged. The rate-limit transient now stores when the client's window ends, rather than `1`.
 - **Rate-limited user agents setting.** Requests whose `User-Agent` contains any listed string (one per line, case-insensitive) are always rate-limited, including logged-in users and integrations authenticating with WooCommerce API keys or application passwords, which were previously always exempt. Never rate-limited IPs stay exempt.
 - **Automatic updates from GitHub releases.** New releases appear on the Plugins and Updates screens like any other plugin update. Lookups are cached for 12 hours, a failed lookup backs off for an hour, and failures are always written to the PHP error log. Sites on 2.0.0 have no updater, so need to install this release manually once.
 - The `wptarl_updater_enabled` filter, to turn the updater off on staging sites or pin a site to its current version.

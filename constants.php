@@ -23,8 +23,11 @@ const DEF_RATE_LIMITED_IPS         = '';
 const DEF_NEVER_RATE_LIMITED_IPS   = '127.0.0.1, ::1';
 const DEF_RATE_LIMITED_USER_AGENTS = '';
 
-// Transient key prefix.
+// Transient key prefix. The value is the Unix time the client's window ends.
 const TRANSIENT_PREFIX = 'wptarl_';
+
+// Shortest Retry-After sent with a 429, in seconds.
+const RETRY_AFTER_MIN = 1;
 
 // Settings group and page slug.
 const SETTINGS_GROUP           = 'wptarl_settings';

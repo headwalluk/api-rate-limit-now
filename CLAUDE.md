@@ -79,7 +79,7 @@ moved, and schedules the daily `wptarl_prune_log` event.
 2. `wptarl_client_ip()` reads `HTTP_CLIENT_IP`, `HTTP_X_FORWARDED_FOR`, `REMOTE_ADDR` in order; the first single valid IP wins, cached in a global for the request
 3. `Plugin::is_rate_limited()`: never-limited list → rate-limited user agents → rate-limited IPs (`wptarl_rate_limited_ips`) → *all guests* toggle. WooCommerce API-key and application-password requests are already authenticated at this point, so they count as logged in
 4. `wptarl_is_client_rate_limited` filter has the final say
-5. `Plugin::enforce_rate_limit()`: no transient → set one for `wptarl_seconds_between_api_calls` seconds; transient present → `Log::record_block()` and `wp_send_json( …, 429 )`, which exits
+5. `Plugin::enforce_rate_limit()`: no transient → set one for `wptarl_seconds_between_api_calls` seconds, holding the window's end time; transient present → `Log::record_block()`, a `Retry-After` header from `get_retry_after()`, and `wp_send_json( …, 429 )`, which exits
 
 ### Key Files
 
@@ -100,7 +100,7 @@ moved, and schedules the daily `wptarl_prune_log` event.
 ### Data Storage
 
 - **`wp_options`** — one option per setting (not a serialised array), plus `wptarl_db_version`
-- **Transients** — `wptarl_{ip}`, value `'1'`, TTL = the interval. Updater: `wptarl_github_release` (12 h) and `wptarl_github_failed` (1 h back-off)
+- **Transients** — `wptarl_{ip}`, value = Unix time the window ends (`'1'` in 2.0.0, handled as a fallback), TTL = the interval. Updater: `wptarl_github_release` (12 h) and `wptarl_github_failed` (1 h back-off)
 - **Custom table** — `{prefix}wptarl_log` (`id`, `client_ip`, `blocked_at` DATETIME in site time, `request_uri`). Pruned daily by retention days and capped at `LOG_MAX_ROWS`
 
 ## Public Contracts
@@ -113,7 +113,7 @@ lists. Treat everything in this table as a contract:
 | Filters | `wptarl_rate_limited_ips`, `wptarl_is_client_rate_limited`, `wptarl_seconds_between_api_calls`, `wptarl_updater_enabled` | renamed or removed, or an argument is removed or reordered |
 | Option names | `wptarl_seconds_between_calls`, `wptarl_never_rate_limited_ips` | a constant's **value** changes. Documented as stable for WP-CLI configuration; saved settings under the old name are silently ignored |
 | Stored formats | log table columns, `blocked_at` in site time, comma-separated IP lists, newline-separated user-agent list | the format changes with no migration |
-| 429 response | `{ "code": "rate_limited", … }` | the status or `code` changes. Clients and monitoring match on them |
+| 429 response | `{ "code": "rate_limited", … }`, `Retry-After` header | the status, `code` or header changes. Clients and monitoring match on them, and well-behaved clients schedule retries from `Retry-After` |
 | Main file path | `api-rate-limit-now/api-rate-limit-now.php` | renamed. WordPress deactivates the plugin on update |
 
 - **Add, don't change.** New filter arguments go at the end. New behaviour gets a new filter, not a new meaning for an existing one

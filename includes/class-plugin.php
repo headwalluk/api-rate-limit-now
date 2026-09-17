@@ -199,16 +199,22 @@ class Plugin {
 	 * @param string $client_ip     The client's IP address.
 	 */
 	private function enforce_rate_limit( string $transient_key, string $client_ip ): void {
-		if ( empty( get_transient( $transient_key ) ) ) {
-			// No recent request from this IP - allow it and set the transient.
+		$window_expires_at = get_transient( $transient_key );
+
+		if ( empty( $window_expires_at ) ) {
+			// No recent request from this IP - allow it and start a window, storing when it ends.
 			$seconds_between_calls = absint( apply_filters( 'wptarl_seconds_between_api_calls', get_option( OPT_SECONDS_BETWEEN_CALLS, DEF_SECONDS_BETWEEN_CALLS ), $client_ip ) );
 
 			if ( $seconds_between_calls > 0 ) {
-				set_transient( $transient_key, '1', $seconds_between_calls );
+				set_transient( $transient_key, time() + $seconds_between_calls, $seconds_between_calls );
 			}
 		} else {
 			// Recent request exists - block with 429.
 			Log::record_block( $client_ip );
+
+			if ( ! headers_sent() ) {
+				header( 'Retry-After: ' . $this->get_retry_after( $window_expires_at ) );
+			}
 
 			$response = array(
 				'code'    => 'rate_limited',
@@ -217,5 +223,27 @@ class Plugin {
 
 			wp_send_json( $response, 429 );
 		}
+	}
+
+	/**
+	 * Get the whole seconds until the client's current window ends, for the Retry-After header.
+	 *
+	 * @since 2.1.0
+	 *
+	 * @param mixed $window_expires_at Transient value: a Unix timestamp, or '1' from a transient set by 2.0.0.
+	 *
+	 * @return int Seconds to wait, at least RETRY_AFTER_MIN.
+	 */
+	private function get_retry_after( mixed $window_expires_at ): int {
+		$expires_at = is_numeric( $window_expires_at ) ? (int) $window_expires_at : 0;
+
+		if ( $expires_at > RETRY_AFTER_MIN ) {
+			$retry_after = $expires_at - time();
+		} else {
+			// Pre-2.1.0 transients hold '1', not an expiry; the full interval never under-reports.
+			$retry_after = absint( get_option( OPT_SECONDS_BETWEEN_CALLS, DEF_SECONDS_BETWEEN_CALLS ) );
+		}
+
+		return max( RETRY_AFTER_MIN, $retry_after );
 	}
 }

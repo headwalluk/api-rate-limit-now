@@ -7,6 +7,7 @@
    - The requests come from a fixed address (a headless front end, an integration partner, a monitoring service): add that IP to **Never rate-limited IPs**.
    - Real visitors trigger them (a block-based WooCommerce checkout, a search-as-you-type widget): lower **Seconds between API calls**. See [choosing an interval](configuration.md#choosing-an-interval).
    - The caller is recognisable some other way, such as an API key header: a developer can exempt it with the `wptarl_is_client_rate_limited` filter. See [hooks and filters](developers/hooks-and-filters.md).
+   - The same client appears several times within a second or two: it is retrying immediately instead of waiting for the `Retry-After` time sent with each 429. That is a fault in the client, not the site. Ask its developer to honour `Retry-After`.
 
 Logged-in users are not limited while **Rate-limited IPs** is empty, unless their browser's user agent matches **Rate-limited user agents**. If editors see 429 errors in the block editor, check both lists.
 
