@@ -102,14 +102,14 @@ class Admin_Hooks {
 			'wptarl-admin',
 			plugins_url( 'assets/admin/admin.css', $this->plugin_file ),
 			array(),
-			'2.0.0'
+			WPTARL_VERSION
 		);
 
 		wp_enqueue_script(
 			'wptarl-admin',
 			plugins_url( 'assets/admin/admin.js', $this->plugin_file ),
 			array(),
-			'2.0.0',
+			WPTARL_VERSION,
 			true
 		);
 

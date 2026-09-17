@@ -40,6 +40,20 @@ The IP shown at the top of the settings page is the address the plugin sees for 
 - Entries older than the **Log retention** period are deleted daily.
 - The log table is created the first time the plugin loads. If the database user can't create tables, nothing can be logged; check the PHP error log for database errors.
 
+## Updates aren't appearing
+
+1. Check the plugin version under **Plugins**. Versions up to and including 2.0.0 have no updater: install a newer release manually once, and later updates arrive automatically.
+2. Check the PHP error log for lines starting `Api_Rate_Limiter Github_Updater [error]:`. Failed lookups are always logged there, whether or not `WP_DEBUG` is on, with the reason — the server can't reach `api.github.com`, GitHub returned an error or rate-limited the request, or a release has no plugin zip.
+3. A lookup is cached for 12 hours, and a failed one for an hour. To check again now, delete the cache, then go to **Dashboard → Updates** and click **Check again**:
+
+   ```bash
+   wp transient delete wptarl_github_release
+   wp transient delete wptarl_github_failed
+   ```
+
+   The updater runs only in the admin area and during cron, so `wp plugin list` and `wp plugin update` don't see GitHub releases.
+4. Check that no code on the site disables updates with the `wptarl_updater_enabled` filter.
+
 ## The plugin was deactivated after an update
 
 The first release after 2.0.0 renamed the plugin's main file from `api-rate-limiter-now.php` to `api-rate-limit-now.php`. WordPress tracks active plugins by file name, so it deactivates the plugin during that update. Reactivate it under **Plugins**; settings and the log are unaffected.

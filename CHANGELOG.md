@@ -6,10 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+
+- **Automatic updates from GitHub releases.** New releases appear on the Plugins and Updates screens like any other plugin update. Lookups are cached for 12 hours, a failed lookup backs off for an hour, and failures are always written to the PHP error log. Sites on 2.0.0 have no updater, so need to install this release manually once.
+- The `wptarl_updater_enabled` filter, to turn the updater off on staging sites or pin a site to its current version.
+- `Requires at least` and `Requires PHP` plugin headers, so WordPress refuses to activate the plugin on an unsupported host.
+
 ### Changed
 
 - **The main plugin file is now `api-rate-limit-now.php`**, matching the plugin's directory and repository name. WordPress records an active plugin by its file path, so **the plugin is deactivated by this update and must be reactivated** under Plugins. Settings and the log are kept.
 - The text domain is now `api-rate-limit-now`, matching the plugin slug.
+- Admin CSS and JavaScript are versioned from the plugin version, not a fixed string, so browsers fetch fresh copies after an update.
+- The release workflow refuses to build when the plugin header, `WPTARL_VERSION` and the `readme.txt` stable tag don't all match the git tag, and publishes byte-identical versioned and generic zips.
+- Deleting the plugin also removes its cached GitHub release lookups.
 
 ## [2.0.0] - 2026-03-06
 

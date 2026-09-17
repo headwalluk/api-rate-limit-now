@@ -24,21 +24,46 @@ jobs:
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
           echo "Plugin version: ${VERSION}"
 
+      - name: Verify version numbers agree
+        env:
+          TAG_VERSION: ${{ steps.get_version.outputs.version }}
+        run: |
+          set -euo pipefail
+
+          HEADER_VERSION=$(sed -n 's/^ \* Version:[[:space:]]*\(.*\)$/\1/p' api-rate-limit-now.php | head -1 | tr -d '[:space:]')
+          CONSTANT_VERSION=$(sed -n "s/^define( 'WPTARL_VERSION', '\(.*\)' );[[:space:]]*$/\1/p" api-rate-limit-now.php | head -1 | tr -d '[:space:]')
+          README_VERSION=$(sed -n 's/^Stable tag:[[:space:]]*\(.*\)$/\1/p' readme.txt | head -1 | tr -d '[:space:]')
+
+          echo "Git tag ................ ${TAG_VERSION}"
+          echo "Plugin header .......... ${HEADER_VERSION}"
+          echo "WPTARL_VERSION ......... ${CONSTANT_VERSION}"
+          echo "readme.txt stable tag .. ${README_VERSION}"
+
+          VERSION_MISMATCH=0
+          for CANDIDATE_VERSION in "${HEADER_VERSION}" "${CONSTANT_VERSION}" "${README_VERSION}"; do
+            if [ "${CANDIDATE_VERSION}" != "${TAG_VERSION}" ]; then
+              VERSION_MISMATCH=1
+            fi
+          done
+
+          if [ "${VERSION_MISMATCH}" -ne 0 ]; then
+            echo "::error::Version mismatch. The plugin header, WPTARL_VERSION and the readme.txt stable tag must all read ${TAG_VERSION}."
+            exit 1
+          fi
+
+          echo "All version numbers agree on ${TAG_VERSION}."
+
       - name: Prepare plugin directory
         run: |
           mkdir -p build
           rsync -av --exclude-from=.distignore ./ build/api-rate-limit-now/
 
-      - name: Create versioned zip
+      - name: Build release zips
+        # The generic zip is a copy of the versioned one, so both are byte-identical.
         run: |
           cd build
           zip -r api-rate-limit-now-${{ steps.get_version.outputs.version }}.zip api-rate-limit-now/
-          cd ..
-
-      - name: Create generic zip
-        run: |
-          cd build
-          zip -r api-rate-limit-now.zip api-rate-limit-now/
+          cp api-rate-limit-now-${{ steps.get_version.outputs.version }}.zip api-rate-limit-now.zip
           cd ..
 
       - name: Upload versioned zip as artifact
@@ -62,7 +87,11 @@ jobs:
           body: |
             **API Rate Limiter v${{ steps.get_version.outputs.version }}**
 
-            Download the zip file and install via WordPress admin or upload to your plugins directory.
+            Rate-limit WordPress REST API calls by client IP address.
+
+            Download `api-rate-limit-now.zip` and install via WordPress admin (Plugins → Add New → Upload Plugin), or upload to your `wp-content/plugins/` directory.
+
+            Sites running a version with the in-plugin GitHub updater receive this update automatically.
 
             See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details.
           draft: false

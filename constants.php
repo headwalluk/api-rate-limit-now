@@ -46,3 +46,11 @@ const DEF_LOGGING_ENABLED = true;
 const OPT_LOG_RETENTION   = 'wptarl_log_retention';
 const DEF_LOG_RETENTION   = 7;
 const LOG_MAX_ROWS        = 5000;
+
+// GitHub updater. A failed lookup is cached for the shorter failure TTL.
+const UPDATER_GITHUB_REPO       = 'headwalluk/api-rate-limit-now';
+const UPDATER_CACHE_KEY         = 'wptarl_github_release';
+const UPDATER_CACHE_TTL         = 12 * HOUR_IN_SECONDS;
+const UPDATER_FAILURE_CACHE_KEY = 'wptarl_github_failed';
+const UPDATER_FAILURE_CACHE_TTL = HOUR_IN_SECONDS;
+const UPDATER_REQUEST_TIMEOUT   = 10;

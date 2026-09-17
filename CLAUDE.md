@@ -67,9 +67,10 @@ a missing `$_SERVER` key, a request with no determinable IP.
 
 ### Entry Point & Initialization
 
-`api-rate-limit-now.php` requires `constants.php`, `functions-private.php` and each class
-(no autoloader), then `wptarl_init()` creates `Api_Rate_Limiter\Plugin` and calls
-`run( __FILE__ )`. `run()` registers every hook, creates the log table if `DB_VERSION` has
+`api-rate-limit-now.php` defines `WPTARL_VERSION`, `WPTARL_FILE` and `WPTARL_BASENAME`,
+requires `constants.php`, `functions-private.php` and each class (no autoloader), creates
+`Github_Updater` in the admin area and cron only, then `wptarl_init()` creates
+`Api_Rate_Limiter\Plugin` and calls `run( __FILE__ )`. `run()` registers every hook, creates the log table if `DB_VERSION` has
 moved, and schedules the daily `wptarl_prune_log` event.
 
 ### Request Flow
@@ -84,7 +85,7 @@ moved, and schedules the daily `wptarl_prune_log` event.
 
 | File | Purpose |
 |------|---------|
-| `api-rate-limit-now.php` | Plugin header, class loading, init, deactivation hook |
+| `api-rate-limit-now.php` | Plugin header, version/file/basename constants, class loading, init, deactivation hook |
 | `constants.php` | Option keys (`OPT_`), defaults (`DEF_`), settings slugs, DB version, log limits |
 | `functions-private.php` | Namespaced helpers: client IP detection, IP list parsing. Private to the plugin |
 | `includes/class-plugin.php` | Hook registration, rate-limit decision and enforcement, Clear Log handler, prune cron callback |
@@ -93,12 +94,13 @@ moved, and schedules the daily `wptarl_prune_log` event.
 | `includes/class-log.php` | Log table: `dbDelta` creation, insert, recent query, prune, clear |
 | `admin-templates/settings-page.php` | Settings and Log tabs (code-first template) |
 | `assets/admin/admin.js`, `admin.css` | Tab switching, click-to-copy IP; loaded only on the settings page |
-| `uninstall.php` | Deletes options, drops the log table, clears cron |
+| `includes/class-github-updater.php` | In-plugin updater: checks GitHub Releases and feeds the WordPress update transient. Holds the `log()` / `log_error()` split described under **Logging** |
+| `uninstall.php` | Deletes options and updater transients, drops the log table, clears cron |
 
 ### Data Storage
 
 - **`wp_options`** — one option per setting (not a serialised array), plus `wptarl_db_version`
-- **Transients** — `wptarl_{ip}`, value `'1'`, TTL = the interval
+- **Transients** — `wptarl_{ip}`, value `'1'`, TTL = the interval. Updater: `wptarl_github_release` (12 h) and `wptarl_github_failed` (1 h back-off)
 - **Custom table** — `{prefix}wptarl_log` (`id`, `client_ip`, `blocked_at` DATETIME in site time, `request_uri`). Pruned daily by retention days and capped at `LOG_MAX_ROWS`
 
 ## Public Contracts
@@ -108,7 +110,7 @@ lists. Treat everything in this table as a contract:
 
 | Contract | Examples | Breaks when |
 |----------|----------|-------------|
-| Filters | `wptarl_rate_limited_ips`, `wptarl_is_client_rate_limited`, `wptarl_seconds_between_api_calls` | renamed or removed, or an argument is removed or reordered |
+| Filters | `wptarl_rate_limited_ips`, `wptarl_is_client_rate_limited`, `wptarl_seconds_between_api_calls`, `wptarl_updater_enabled` | renamed or removed, or an argument is removed or reordered |
 | Option names | `wptarl_seconds_between_calls`, `wptarl_never_rate_limited_ips` | a constant's **value** changes. Documented as stable for WP-CLI configuration; saved settings under the old name are silently ignored |
 | Stored formats | log table columns, `blocked_at` in site time, comma-separated IP lists | the format changes with no migration |
 | 429 response | `{ "code": "rate_limited", … }` | the status or `code` changes. Clients and monitoring match on them |
@@ -147,11 +149,11 @@ before tagging. A review by an AI agent, your own included, does not count as th
 
 - **Namespace:** `Api_Rate_Limiter` for all classes and helper functions. Global functions in the main file are prefixed `wptarl_`
 - **Single-Entry Single-Exit (SESE):** functions generally have one `return` at the end. Top-of-function guard clauses (capability checks, disabled-feature short-circuits, missing input) are acceptable when they keep the rest of the function flat. Never `return` mid-function, inside a loop, or nested several `if` blocks deep
-- **An `if` with one or more `elseif` branches ends in a plain `else`**, never an `elseif`. A branch that does nothing is still written out, with a short comment. A lone `if` needs no `else`
+- **An `if` with one or more `elseif` branches ends in a plain `else`**, never an `elseif`. A branch that does nothing is still written out, with a short comment. A lone `if` needs no `else`. `phpcs.xml` excludes the `if`/`elseif`/`else` codes of `Generic.CodeAnalysis.EmptyStatement` so these comment-only branches pass; empty `catch`, loop and `switch` bodies are still errors
 - **No assignment inside a condition** — assign on the line before
 - **No unreachable `return`** after a call that always exits (`wp_send_json()`, `wp_safe_redirect()` + `exit`, `wp_die()`), and no bare `return;` as the last statement of a `void` function
 - **Constants for all magic strings/numbers** in `constants.php`: option keys, hook names, nonce actions, capabilities, limits. A key constant's **value** is stored data and never changes; see **Public Contracts**
-- **Type hints and return types** on all functions and class properties, within the PHP 8.0 floor
+- **Type hints and return types** on all functions and class properties, within the PHP 8.0 floor. Only PHP 8.4+ is installed on the dev server, so nothing checks the floor mechanically: check new syntax against it by hand
 - **Callbacks on hooks the plugin doesn't own take `mixed`.** Any earlier callback can hand over the wrong type, and a typed parameter turns that into a `TypeError` on a request the plugin doesn't control. Check each value before use, and pass a value a filter callback can't use through unchanged
 - **Check what a filter returns.** Read a boolean result with `filter_var( …, FILTER_VALIDATE_BOOLEAN )`, and fall back to the default for a malformed array
 - **Cast at the boundary.** `get_option()` returns strings (or `false`). Cast at the point of read: `absint( get_option( OPT_LOG_RETENTION, DEF_LOG_RETENTION ) )`
@@ -190,7 +192,8 @@ printf(
 
 ### Logging
 
-There is no logging dependency; use `error_log()` with a `phpcs:ignore`.
+Two methods, deliberately split — see `Github_Updater::log()` / `log_error()`. There is no
+logging dependency; use `error_log()` with a `phpcs:ignore`.
 
 - **Genuine failures** (a failed insert, a failed HTTP request, a malformed response) log **unconditionally**, so a sysadmin sees them without touching config
 - **Routine flow tracing** logs only when `WP_DEBUG` is on
@@ -228,14 +231,20 @@ Every `phpcs:ignore` and `phpcs:disable` names the exact sniff and ends with `--
 
 ## Release Workflow
 
-1. Update the version in `api-rate-limit-now.php` (`Version:` header) and asset version strings
+1. Update the version in `api-rate-limit-now.php` — **both** the `Version:` header and the `WPTARL_VERSION` constant
 2. Update `CHANGELOG.md`: move the `[Unreleased]` entries under the new version
 3. Update `readme.txt`: stable tag, changelog, and an upgrade notice for anything a site owner must act on
 4. Run `phpcs` to verify compliance
 5. If the release touches **High-Impact Code**, the maintainer reads that diff line by line
 6. Tag `vX.Y.Z` and push; `.github/workflows/release.yml` builds the zip (excluding `.distignore` entries) and creates the GitHub Release
 
-**The `Version` must always correspond to a real GitHub Release tag.**
+The version lives in **three** places that must agree with the git tag: the header `Version:`
+field, `WPTARL_VERSION`, and the `readme.txt` stable tag. `release.yml` refuses to build on a
+mismatch, and `Github_Updater` logs an error when the header and constant drift at runtime.
+
+**The `Version` must always correspond to a real GitHub Release tag.** Setting it to a version
+that doesn't exist on GitHub degrades the updater experience. New `@since` tags use the next
+planned version; if the release number changes, update them.
 
 ## Reference Files
 

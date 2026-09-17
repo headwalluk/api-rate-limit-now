@@ -26,6 +26,8 @@ A lightweight plugin that uses WordPress transients to throttle REST API request
 2. WordPress admin → Plugins → Add New → Upload Plugin → choose the zip → Install Now → Activate
 3. Settings → API Rate Limiter to configure
 
+Once installed, the plugin receives future updates through its bundled GitHub updater, with no extra configuration.
+
 ### Requirements
 
 - WordPress 6.0 or later

@@ -9,7 +9,7 @@ This is the **public extension surface** of API Rate Limiter. Anything not liste
 
 ## Filters
 
-All three filters run during the rate-limit check on `rest_api_init`, in this order: `wptarl_rate_limited_ips` → `wptarl_is_client_rate_limited` → `wptarl_seconds_between_api_calls`. Add them from a plugin or mu-plugin, or from your theme's `functions.php`, so they're registered before the REST API starts.
+The first three filters run during the rate-limit check on `rest_api_init`, in this order: `wptarl_rate_limited_ips` → `wptarl_is_client_rate_limited` → `wptarl_seconds_between_api_calls`. Add them from a plugin or mu-plugin, or from your theme's `functions.php`, so they're registered before the REST API starts.
 
 ---
 
@@ -77,6 +77,33 @@ add_filter( 'wptarl_seconds_between_api_calls', function ( $seconds, $client_ip 
     return $seconds;
 }, 10, 2 );
 ```
+
+---
+
+### `wptarl_updater_enabled`
+
+Disable the in-plugin GitHub updater. Useful for staging environments, local development, or pinning a site to its current version.
+
+**Parameters:**
+- `bool $enabled` — `true` by default
+
+**Returns:** `bool` — Return `false` to stop update checks. Read as a boolean the way WordPress options are, so `'no'`, `'off'` and `'0'` also count as false.
+
+```php
+// Disable updates on staging.
+add_filter( 'wptarl_updater_enabled', function ( $enabled ) {
+    if ( 'staging' === wp_get_environment_type() ) {
+        $enabled = false;
+    }
+
+    return $enabled;
+} );
+
+// Pin a production site to its current version.
+add_filter( 'wptarl_updater_enabled', '__return_false' );
+```
+
+The updater runs only in the admin area and during cron, so register this filter from a plugin or mu-plugin.
 
 ---
 

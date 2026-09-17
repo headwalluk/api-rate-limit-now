@@ -18,6 +18,10 @@ delete_option( 'wptarl_logging_enabled' );
 delete_option( 'wptarl_log_retention' );
 delete_option( 'wptarl_db_version' );
 
+// Remove cached GitHub release lookups.
+delete_transient( 'wptarl_github_release' );
+delete_transient( 'wptarl_github_failed' );
+
 // Drop the log table.
 global $wpdb;
 $wptarl_table_name = $wpdb->prefix . 'wptarl_log';

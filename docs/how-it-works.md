@@ -50,6 +50,12 @@ The **Log** tab on the settings page shows the 100 most recent entries, in the s
 
 For an allowed request, the cost is reading the plugin's options (which WordPress loads on every request anyway) and one transient read and write. With a persistent object cache (Redis, Memcached) transients never touch the database.
 
+## Updates
+
+The plugin updates itself from its [GitHub releases](https://github.com/headwalluk/api-rate-limit-now/releases). When WordPress checks for plugin updates, the plugin asks GitHub for the latest release, and a newer version appears on the Plugins and Updates screens like any other plugin update. It is installed the same way, manually or through WordPress's automatic updates if you've enabled them for this plugin.
+
+The GitHub response is cached for 12 hours. If GitHub can't be reached, the plugin waits an hour before trying again. Checks run only in the admin area and during WordPress cron, never on front-end requests.
+
 ## Deactivating and deleting
 
 - **Deactivating** stops the daily log clean-up task. Settings and the log are kept.
