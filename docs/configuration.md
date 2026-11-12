@@ -8,14 +8,15 @@ For complete setups, see [examples](examples.md).
 
 | Setting | Default | What it does |
 |---------|---------|--------------|
-| Seconds between API calls | `10` | The interval. A rate-limited client may make one REST API request in this many seconds. Must be at least 1; saving `0` or an empty value restores the default |
+| Seconds between API calls | `10` | The interval. A rate-limited client may make one REST API request in this many seconds. From 1 to 3,600; saving anything outside that restores the default |
 | Rate-limit all guests | On | Limit every client that isn't logged in. Ignored while *Rate-limited IPs* has entries |
 | Rate-limited IPs | *(empty)* | When this list has entries, **only** these IPs are limited, logged in or not |
 | Never rate-limited IPs | `127.0.0.1, ::1` | IPs that are never limited. Checked before everything else |
 | Never rate-limited routes | `wc/store`<br>`wc-ppcp` | REST routes that are never limited, together with every route below them. One per line |
 | Rate-limited user agents | *(empty)* | Requests whose `User-Agent` contains one of these strings are limited, logged in or not. One per line |
 | Enable logging | On | Record refused requests on the **Log** tab |
-| Log retention (days) | `7` | Log entries older than this are deleted by a daily task. Saving `0` or an empty value restores the default |
+| Log retention (days) | `7` | Log entries older than this are deleted by a daily task. From 1 to 90; saving anything outside that restores the default |
+| Delete all plugin data when uninstalled | Off | When on, deleting the plugin from the Plugins screen also removes its settings and the log. Deactivating never deletes anything |
 
 The order these are applied in is set out in [how it works](how-it-works.md#who-is-rate-limited).
 

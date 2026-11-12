@@ -10,10 +10,9 @@ namespace Api_Rate_Limiter;
 defined( 'ABSPATH' ) || die();
 
 /**
- * Check multiple $_SERVER elements to find the remote client's IP address.
+ * Get the client's IP address from REMOTE_ADDR, as passed through the wptarl_client_ip filter.
  *
- * Results are cached in a global variable so the lookup only happens once
- * per request.
+ * Cached in a global for the rest of the request.
  *
  * @since 2.0.0
  *
@@ -23,26 +22,27 @@ function wptarl_client_ip(): ?string {
 	global $wptarl_client_ip;
 
 	if ( is_null( $wptarl_client_ip ) ) {
-		$server_vars = [ 'HTTP_CLIENT_IP', 'HTTP_X_FORWARDED_FOR', 'REMOTE_ADDR' ];
+		$detected_ip = null;
 
-		foreach ( $server_vars as $server_var ) {
-			if ( array_key_exists( $server_var, $_SERVER ) ) {
-				$candidate = filter_var(
-					wp_unslash( $_SERVER[ $server_var ] ),
-					FILTER_VALIDATE_IP
-				);
-
-				if ( ! empty( $candidate ) ) {
-					$wptarl_client_ip = $candidate;
-					break;
-				}
-			}
+		// Forwarded headers (X-Forwarded-For, Client-IP) are set by the client and are never read here.
+		if ( isset( $_SERVER['REMOTE_ADDR'] ) && is_string( $_SERVER['REMOTE_ADDR'] ) ) {
+			$remote_addr = filter_var( trim( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ), FILTER_VALIDATE_IP ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Validated as an IP address.
+			$detected_ip = is_string( $remote_addr ) ? $remote_addr : null;
 		}
 
-		// Don't leave an empty string or false in the global.
-		if ( empty( $wptarl_client_ip ) ) {
-			$wptarl_client_ip = null;
-		}
+		/**
+		 * Filter the client IP address used for rate limiting.
+		 *
+		 * Return null to leave the request unlimited. Anything that isn't a valid IP address is treated as null.
+		 *
+		 * @since 3.0.0
+		 *
+		 * @param string|null $detected_ip REMOTE_ADDR, or null when it isn't a valid IP address.
+		 */
+		$filtered_ip = apply_filters( 'wptarl_client_ip', $detected_ip );
+		$client_ip   = is_string( $filtered_ip ) ? filter_var( trim( $filtered_ip ), FILTER_VALIDATE_IP ) : false;
+
+		$wptarl_client_ip = is_string( $client_ip ) ? $client_ip : null;
 	}
 
 	return $wptarl_client_ip;
@@ -216,4 +216,15 @@ function wptarl_redact_request_uri( string $request_uri ): string {
 	}
 
 	return $redacted_uri;
+}
+
+/**
+ * Log a genuine failure. Always logs, whatever WP_DEBUG says.
+ *
+ * @since 3.0.0
+ *
+ * @param string $message Message to log.
+ */
+function log_error( string $message ): void {
+	error_log( 'API Rate Limiter: ' . $message ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Errors must reach the server log without WP_DEBUG.
 }

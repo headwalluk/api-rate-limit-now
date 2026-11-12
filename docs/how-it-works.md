@@ -15,7 +15,7 @@ Some plugins serve REST routes through a different URL. A payment plugin that an
 
 ## The request flow
 
-1. **Find the client's IP address.** The plugin reads `HTTP_CLIENT_IP`, then `HTTP_X_FORWARDED_FOR`, then `REMOTE_ADDR`, and uses the first that holds a single valid IP address. If none does, the request is let through.
+1. **Find the client's IP address.** The plugin uses `REMOTE_ADDR`, the address the web server reports for the connection. Headers such as `X-Forwarded-For` and `Client-IP` are never read, because any client can set them to whatever it likes. If `REMOTE_ADDR` isn't a valid IP address, the request is let through. Behind a proxy or CDN, see [everyone appears to have the same IP address](troubleshooting.md#everyone-appears-to-have-the-same-ip-address).
 2. **Decide whether this client is rate-limited**, from the settings. See [Who is rate-limited](#who-is-rate-limited).
 3. **Let code change the decision.** The `wptarl_is_client_rate_limited` filter has the final say. See [hooks and filters](developers/hooks-and-filters.md).
 4. **Check the client's window.** Each rate-limited IP address has a short-lived WordPress transient.
@@ -88,9 +88,15 @@ For a rate-limited client, an allowed request costs one transient read and one w
 
 The plugin updates itself from its [GitHub releases](https://github.com/headwalluk/api-rate-limit-now/releases). When WordPress checks for plugin updates, the plugin asks GitHub for the latest release, and a newer version appears on the Plugins and Updates screens like any other plugin update. It's installed the same way, manually or through WordPress's automatic updates if you've enabled them for this plugin.
 
-The GitHub response is cached for 12 hours. If GitHub can't be reached, the plugin waits an hour before trying again. Checks run only in the admin area and during WordPress cron.
+The GitHub response is cached for 12 hours. If GitHub can't be reached, the plugin waits an hour before trying again. Checks run only in the admin area, during WordPress cron and under WP-CLI.
 
 ## Deactivating and deleting
 
 - **Deactivating** stops the daily log clean-up task. Settings and the log are kept.
-- **Deleting** the plugin from the Plugins screen removes every setting and cached update lookup, and drops the log table. Any rate-limit transients still in place expire on their own within the interval.
+- **Deleting** the plugin from the Plugins screen keeps everything, unless **Delete all plugin data when uninstalled** is on. Then it removes every option whose name starts with `wptarl_`, the rate-limit transients and the cached update lookup, and drops the log table.
+
+## Privacy
+
+The plugin stores its settings in the WordPress options table, one transient per rate-limited client (holding only the time its window ends, keyed by IP address), and, when logging is on, the log table. A log entry holds the client's IP address, the time and the request URI with credentials redacted. IP addresses are personal data in many jurisdictions: keep the retention period as short as you need, and mention the log in your privacy policy.
+
+It sends no data anywhere, except that to check for updates it asks `api.github.com` for the latest release, at most every 12 hours. Like every request WordPress makes, that request carries your site's address in its user agent.

@@ -55,7 +55,28 @@ class Log {
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 		dbDelta( $sql );
 
-		update_option( OPT_DB_VERSION, DB_VERSION );
+		if ( self::table_exists() ) {
+			update_option( OPT_DB_VERSION, DB_VERSION );
+		} else {
+			// The version stays unrecorded, so the next admin_init tries again.
+			log_error( sprintf( 'could not create the log table %s: %s', $table_name, $wpdb->last_error ) );
+		}
+	}
+
+	/**
+	 * Check whether the log table exists.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @return bool True when the table is present.
+	 */
+	public static function table_exists(): bool {
+		global $wpdb;
+
+		$table_name = self::table_name();
+		$found_name = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $table_name ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Schema check, run only on activation and admin_init.
+
+		return $found_name === $table_name;
 	}
 
 	/**
@@ -102,7 +123,7 @@ class Log {
 
 		$now = new \DateTime( 'now', wp_timezone() );
 
-		$wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+		$inserted = $wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 			self::table_name(),
 			array(
 				'client_ip'   => $client_ip,
@@ -111,6 +132,10 @@ class Log {
 			),
 			array( '%s', '%s', '%s' )
 		);
+
+		if ( false === $inserted ) {
+			log_error( 'could not record a blocked request in the log table: ' . $wpdb->last_error );
+		}
 	}
 
 	/**
@@ -181,12 +206,16 @@ class Log {
 		$table_name = self::table_name();
 		$cutoff     = new \DateTime( "-{$retention_days} days", wp_timezone() );
 
-		$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$pruned = $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$wpdb->prepare(
 				"DELETE FROM {$table_name} WHERE blocked_at < %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is safe
 				$cutoff->format( 'Y-m-d H:i:s' )
 			)
 		);
+
+		if ( false === $pruned ) {
+			log_error( 'could not prune old log entries: ' . $wpdb->last_error );
+		}
 
 		// Also cap total rows as a safety net.
 		$count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table_name}" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
@@ -212,6 +241,15 @@ class Log {
 
 		$table_name = self::table_name();
 
-		$wpdb->query( "TRUNCATE TABLE {$table_name}" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is safe
+		$cleared = $wpdb->query( "TRUNCATE TABLE {$table_name}" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is safe
+
+		if ( false === $cleared ) {
+			// TRUNCATE needs the DROP privilege, which some hosts withhold.
+			$cleared = $wpdb->query( "DELETE FROM {$table_name}" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table name is safe
+		}
+
+		if ( false === $cleared ) {
+			log_error( 'could not clear the log table: ' . $wpdb->last_error );
+		}
 	}
 }

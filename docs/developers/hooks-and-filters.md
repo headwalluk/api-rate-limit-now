@@ -9,7 +9,37 @@ This is the **public extension surface** of API Rate Limiter. Anything not liste
 
 ## Filters
 
-The first three filters run during the rate-limit check on `rest_api_init`, for real REST requests only (`REST_REQUEST` is true), in this order: `wptarl_rate_limited_ips` → `wptarl_is_client_rate_limited` → `wptarl_seconds_between_api_calls`. Add them from a plugin or mu-plugin, or from your theme's `functions.php`, so they're registered before the REST API starts.
+The first four filters run during the rate-limit check on `rest_api_init`, for real REST requests only (`REST_REQUEST` is true), in this order: `wptarl_client_ip` → `wptarl_rate_limited_ips` → `wptarl_is_client_rate_limited` → `wptarl_seconds_between_api_calls`. Add them from a plugin or mu-plugin, or from your theme's `functions.php`, so they're registered before the REST API starts.
+
+Each filter's result is checked. A value of the wrong type is ignored and the plugin carries on with its own value, so a mistake in a snippet can't take the REST API down.
+
+---
+
+### `wptarl_client_ip`
+
+Filter the client IP address the plugin rate-limits by. The plugin uses `REMOTE_ADDR` and never reads forwarded headers. Use this filter only when the web server can't be configured to restore the visitor's address (nginx `real_ip_module`, Apache `mod_remoteip`), and only trust a forwarded header when the request comes from your own proxy: anyone else can put any address in it.
+
+The result is cached for the rest of the request. It's also the address shown at the top of the settings page.
+
+**Parameters:**
+- `string|null $client_ip` — `REMOTE_ADDR`, or `null` when it isn't a valid IP address
+
+**Returns:** `string|null` — The address to rate-limit by. Return `null` to let the request through unchecked. Anything that isn't a valid IPv4 or IPv6 address is treated as `null`.
+
+```php
+// Behind a load balancer at 10.0.0.5 that appends the visitor's address to X-Forwarded-For.
+add_filter( 'wptarl_client_ip', function ( $client_ip ) {
+    if ( '10.0.0.5' === $client_ip && isset( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
+        // The load balancer adds the address it saw last; earlier entries came from the client.
+        $forwarded_ips = explode( ',', wp_unslash( $_SERVER['HTTP_X_FORWARDED_FOR'] ) );
+        $client_ip     = trim( end( $forwarded_ips ) );
+    }
+
+    return $client_ip;
+} );
+```
+
+Since 3.0.0.
 
 ---
 
@@ -20,7 +50,7 @@ Filter the list of IP addresses to rate-limit. Runs only when the client's IP is
 **Parameters:**
 - `array $ips` — IPs from the *Rate-limited IPs* setting, as an array of strings. Empty by default
 
-**Returns:** `array` — IP address strings. If the array has any entries, only those IPs are limited and the *Rate-limit all guests* setting is ignored. Return an empty array to fall back to that setting.
+**Returns:** `array` — IP address strings. If the array has any entries, only those IPs are limited and the *Rate-limit all guests* setting is ignored. Return an empty array to fall back to that setting. Anything that isn't an array is ignored, and the saved list is used.
 
 ```php
 add_filter( 'wptarl_rate_limited_ips', function ( $ips ) {
@@ -40,7 +70,7 @@ For a fixed list of user agents or routes, use the settings instead of this filt
 **Parameters:**
 - `bool $is_limited` — The plugin's decision
 
-**Returns:** `bool` — `true` to rate-limit this request, `false` to let it through unchecked. Cast with `(bool)`, so return a real boolean: the string `'false'` counts as `true`.
+**Returns:** `bool` — `true` to rate-limit this request, `false` to let it through unchecked. Read as a boolean the way WordPress options are, so `'no'`, `'off'`, `'false'` and `'0'` count as false, and any other string also counts as false. Before 3.0.0 the result was cast with `(bool)`, so any non-empty string counted as true.
 
 Returning `true` has no effect when the plugin couldn't determine the client's IP address.
 
@@ -64,10 +94,10 @@ add_filter( 'wptarl_is_client_rate_limited', function ( $is_limited ) {
 Filter the interval for a client. Runs only for a rate-limited client whose previous request is outside the interval, just before its new transient is set.
 
 **Parameters:**
-- `mixed $seconds` — The *Seconds between API calls* setting. Read from the database, so usually a numeric string rather than an `int`
+- `int $seconds` — The *Seconds between API calls* setting. Before 3.0.0 this was the raw option value, usually a numeric string
 - `string $client_ip` — The client's IP address
 
-**Returns:** `int` — Seconds until this client may make another request. The value is passed through `absint()`; `0` sets no transient, so the client's next request is allowed too. The `Retry-After` header on a later 429 follows the value you returned.
+**Returns:** `int` — Seconds until this client may make another request. The value is passed through `absint()`; `0` sets no transient, so the client's next request is allowed too. A value that isn't numeric is ignored, and the setting is used. The `Retry-After` header on a later 429 follows the value you returned.
 
 ```php
 // Allow a known partner to make faster requests.
@@ -145,7 +175,7 @@ add_filter( 'wptarl_updater_enabled', function ( $enabled ) {
 add_filter( 'wptarl_updater_enabled', '__return_false' );
 ```
 
-The updater runs only in the admin area and during cron, so register this filter from a plugin or mu-plugin.
+The updater runs only in the admin area, during cron and under WP-CLI, so register this filter from a plugin or mu-plugin.
 
 ---
 
@@ -169,6 +199,7 @@ To configure the plugin from code or WP-CLI, write the options WordPress stores 
 | `wptarl_rate_limited_user_agents` | Rate-limited user agents (newline-separated) |
 | `wptarl_logging_enabled` | Enable logging |
 | `wptarl_log_retention` | Log retention (days) |
+| `wptarl_delete_data_on_uninstall` | Delete all plugin data when uninstalled |
 
 ```bash
 wp option update wptarl_seconds_between_calls 5

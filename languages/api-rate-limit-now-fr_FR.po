@@ -1,0 +1,188 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: API Rate Limiter 2.1.1\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/api-rate-limit-now\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-11-12T17:01:39+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Language: fr_FR\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: api-rate-limit-now\n"
+
+#. Plugin Name of the plugin
+#: api-rate-limit-now.php
+msgid "API Rate Limiter"
+msgstr "API Rate Limiter"
+
+#. Plugin URI of the plugin
+#: api-rate-limit-now.php
+msgid "https://headwall-hosting.com/plugins/protect-your-wp-site-with-api-rate-limiting/"
+msgstr "https://headwall-hosting.com/plugins/protect-your-wp-site-with-api-rate-limiting/"
+
+#. Description of the plugin
+#: api-rate-limit-now.php
+msgid "Rate-limit REST API calls by client IP address."
+msgstr "Limiter le nombre d'appels à l'API REST en fonction de l'adresse IP du client."
+
+#. Author of the plugin
+#: api-rate-limit-now.php
+msgid "Paul Faulkner"
+msgstr "Paul Faulkner"
+
+#. Author URI of the plugin
+#: api-rate-limit-now.php
+msgid "https://headwall-hosting.com/a-web-guys-blog/"
+msgstr "https://headwall-hosting.com/a-web-guys-blog/"
+
+#: admin-templates/settings-page.php:31
+msgid "Your current IP address:"
+msgstr "Votre adresse IP actuelle :"
+
+#: admin-templates/settings-page.php:34
+msgctxt "link: copy the IP address to the clipboard"
+msgid "click to copy"
+msgstr "cliquez pour copier"
+
+#: admin-templates/settings-page.php:41
+#: includes/class-admin-hooks.php:82
+msgid "Settings"
+msgstr "Paramètres"
+
+#: admin-templates/settings-page.php:42
+msgctxt "noun; settings page tab listing blocked requests"
+msgid "Log"
+msgstr "Journal"
+
+#: admin-templates/settings-page.php:59
+msgid "Seconds between API calls"
+msgstr "Nombre de secondes entre deux appels API"
+
+#. translators: 1: lowest accepted number of seconds, 2: highest accepted number of seconds
+#: admin-templates/settings-page.php:64
+#, php-format
+msgid "Minimum number of seconds between REST API requests from the same IP address, from %1$d to %2$d."
+msgstr "Nombre minimum de secondes entre deux requêtes API REST provenant de la même adresse IP, compris entre %1$d et %2$d."
+
+#: admin-templates/settings-page.php:76
+msgid "Rate-limit all guests"
+msgstr "Limiter le nombre de connexions pour tous les invités"
+
+#: admin-templates/settings-page.php:79
+msgid "Apply rate limiting to all non-logged-in users"
+msgstr "Appliquer une limitation du débit à tous les utilisateurs non connectés"
+
+#: admin-templates/settings-page.php:80
+msgid "When enabled, all API requests from visitors who are not logged in are rate-limited. Ignored while the Rate-limited IPs list below has any addresses in it."
+msgstr "Lorsque cette option est activée, toutes les requêtes API provenant de visiteurs non connectés sont soumises à une limitation de débit. Cette option est ignorée tant que la liste des adresses IP soumises à une limitation de débit ci-dessous contient des adresses."
+
+#: admin-templates/settings-page.php:87
+msgid "Rate-limited IPs"
+msgstr "Adresses IP à débit limité"
+
+#: admin-templates/settings-page.php:89
+msgid "IP addresses to rate-limit, separated by commas or newlines. While this list has any addresses in it, only these addresses are rate-limited, whether or not they are logged in, and \"Rate-limit all guests\" is ignored."
+msgstr "Adresses IP à soumettre à une limitation de débit, séparées par des virgules ou des sauts de ligne. Tant que cette liste contient des adresses, seules celles-ci sont soumises à la limitation de débit, qu'elles soient connectées ou non, et l'option « Limiter le débit de tous les visiteurs » est ignorée."
+
+#: admin-templates/settings-page.php:96
+msgid "Never rate-limited IPs"
+msgstr "Des adresses IP sans aucune limitation de débit"
+
+#: admin-templates/settings-page.php:98
+msgid "IP addresses that are always exempt from rate limiting, separated by commas or newlines."
+msgstr "Adresses IP toujours exemptées de la limitation de débit, séparées par des virgules ou des sauts de ligne."
+
+#: admin-templates/settings-page.php:105
+msgid "Never rate-limited routes"
+msgstr "Itinéraires sans limitation de débit"
+
+#: admin-templates/settings-page.php:107
+msgid "REST API routes that are never rate-limited, one per line. Each covers the routes below it, matching whole path segments: wc/store covers wc/store/v1/cart, but not wc/storefront. Wildcards are not supported. You can paste a request URI from the Log tab. The defaults exempt the WooCommerce Store API and PayPal button requests that shoppers make during checkout."
+msgstr "Routes de l'API REST qui ne sont jamais soumises à une limitation de débit, à raison d'une par ligne. Chacune couvre les routes situées en dessous d'elle, en correspondant à des segments de chemin complets : « wc/store » couvre « wc/store/v1/cart », mais pas « wc/storefront ». Les caractères génériques ne sont pas pris en charge. Vous pouvez coller une URI de requête à partir de l’onglet « Log ». Par défaut, l’API WooCommerce Store et les requêtes relatives au bouton PayPal effectuées par les acheteurs lors du paiement sont exclues."
+
+#: admin-templates/settings-page.php:114
+msgid "Rate-limited user agents"
+msgstr "Agents utilisateurs soumis à une limitation de débit"
+
+#: admin-templates/settings-page.php:116
+msgid "Always rate-limit requests whose User-Agent contains one of these strings, one per line. Matching ignores case. Applies to logged-in users and authenticated API clients too, but never to the IPs listed above as never rate-limited."
+msgstr "Limitez toujours le débit des requêtes dont l'en-tête « User-Agent » contient l'une de ces chaînes de caractères, à raison d'une par ligne. La correspondance ne tient pas compte de la casse. Cette règle s'applique également aux utilisateurs connectés et aux clients API authentifiés, mais jamais aux adresses IP répertoriées ci-dessus, qui ne sont jamais soumises à une limitation de débit."
+
+#: admin-templates/settings-page.php:122
+msgctxt "settings row heading"
+msgid "Enable logging"
+msgstr "Activer la journalisation"
+
+#: admin-templates/settings-page.php:125
+msgid "Log blocked API requests"
+msgstr "Enregistrer les requêtes API bloquées"
+
+#: admin-templates/settings-page.php:126
+msgid "When enabled, blocked requests are recorded in the Log tab. Logging only occurs when a request is blocked, so there is no impact on normal traffic."
+msgstr "Lorsque cette fonctionnalité est activée, les requêtes bloquées sont consignées dans l'onglet « Journal ». La consignation n'a lieu que lorsqu'une requête est bloquée ; il n'y a donc aucun impact sur le trafic normal."
+
+#: admin-templates/settings-page.php:133
+msgid "Log retention (days)"
+msgstr "Durée de conservation des journaux (jours)"
+
+#. translators: 1: lowest accepted number of days, 2: highest accepted number of days
+#: admin-templates/settings-page.php:138
+#, php-format
+msgid "Number of days to keep log entries before they are automatically pruned, from %1$d to %2$d."
+msgstr "Nombre de jours pendant lesquels les entrées du journal sont conservées avant d'être automatiquement supprimées, de %1$d à %2$d."
+
+#: admin-templates/settings-page.php:150
+msgctxt "settings row heading: what happens when the plugin is deleted"
+msgid "Uninstall"
+msgstr "Désinstaller"
+
+#: admin-templates/settings-page.php:153
+msgid "Delete all plugin data when uninstalled"
+msgstr "Supprimer toutes les données du plugin lors de sa désinstallation"
+
+#: admin-templates/settings-page.php:154
+msgid "When enabled, deleting the plugin from the Plugins screen also removes its settings and the log. Deactivating never deletes anything."
+msgstr "Lorsque cette option est activée, la suppression du plugin depuis l'écran « Plugins » entraîne également la suppression de ses paramètres et de son journal. La désactivation n'entraîne jamais aucune suppression."
+
+#: admin-templates/settings-page.php:172
+msgid "No blocked requests have been logged yet."
+msgstr "Aucune requête bloquée n'a encore été enregistrée."
+
+#. translators: %d: number of log entries shown
+#: admin-templates/settings-page.php:180
+#, php-format
+msgid "Showing the %d most recent blocked request."
+msgid_plural "Showing the %d most recent blocked requests."
+msgstr[0] "Affichage de la %dre requête bloquée la plus récente."
+msgstr[1] "Affichage des %d dernières requêtes bloquées."
+
+#: admin-templates/settings-page.php:187
+msgid "IP Address"
+msgstr "Adresse IP"
+
+#: admin-templates/settings-page.php:188
+msgctxt "log table column: date and time the request was refused"
+msgid "Blocked At"
+msgstr "Bloqué à"
+
+#: admin-templates/settings-page.php:189
+msgid "Request URI"
+msgstr "URI de la requête"
+
+#: admin-templates/settings-page.php:208
+msgctxt "verb; button that deletes every log entry"
+msgid "Clear Log"
+msgstr "Effacer le journal"
+
+#: includes/class-admin-hooks.php:122
+msgctxt "confirmation after copying the IP address to the clipboard"
+msgid "copied!"
+msgstr "Copié !"
+
+#: includes/class-plugin.php:279
+msgid "Too many requests. Please slow down."
+msgstr "Il y a trop de requêtes. Veuillez ralentir."

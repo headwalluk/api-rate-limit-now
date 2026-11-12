@@ -17,6 +17,7 @@ $rate_limited_agents    = (string) get_option( OPT_RATE_LIMITED_USER_AGENTS, DEF
 $never_limited_routes   = (string) get_option( OPT_NEVER_RATE_LIMITED_ROUTES, DEF_NEVER_RATE_LIMITED_ROUTES );
 $logging_enabled        = (bool) filter_var( get_option( OPT_LOGGING_ENABLED, DEF_LOGGING_ENABLED ), FILTER_VALIDATE_BOOLEAN );
 $log_retention          = absint( get_option( OPT_LOG_RETENTION, DEF_LOG_RETENTION ) );
+$delete_data            = (bool) filter_var( get_option( OPT_DELETE_DATA_ON_UNINSTALL, DEF_DELETE_DATA_ON_UNINSTALL ), FILTER_VALIDATE_BOOLEAN );
 $client_ip              = wptarl_client_ip();
 
 printf(
@@ -30,7 +31,7 @@ if ( ! empty( $client_ip ) ) {
 		esc_html__( 'Your current IP address:', 'api-rate-limit-now' ),
 		esc_html( $client_ip ),
 		esc_attr( $client_ip ),
-		esc_html__( 'click to copy', 'api-rate-limit-now' )
+		esc_html_x( 'click to copy', 'link: copy the IP address to the clipboard', 'api-rate-limit-now' )
 	);
 }
 
@@ -38,7 +39,7 @@ if ( ! empty( $client_ip ) ) {
 printf(
 	'<nav class="nav-tab-wrapper wp-clearfix"><a href="#settings" class="nav-tab nav-tab-active" data-tab="settings">%s</a><a href="#log" class="nav-tab" data-tab="log">%s</a></nav>',
 	esc_html__( 'Settings', 'api-rate-limit-now' ),
-	esc_html__( 'Log', 'api-rate-limit-now' )
+	esc_html_x( 'Log', 'noun; settings page tab listing blocked requests', 'api-rate-limit-now' )
 );
 
 // --- Settings tab panel ---
@@ -53,11 +54,20 @@ echo '<table class="form-table" role="presentation"><tbody>';
 
 // Seconds between API calls.
 printf(
-	'<tr><th scope="row"><label for="%1$s">%2$s</label></th><td><input type="number" id="%1$s" name="%1$s" value="%3$s" min="1" max="3600" class="small-text" /><p class="description">%4$s</p></td></tr>',
+	'<tr><th scope="row"><label for="%1$s">%2$s</label></th><td><input type="number" id="%1$s" name="%1$s" value="%3$s" min="%5$s" max="%6$s" class="small-text" /><p class="description">%4$s</p></td></tr>',
 	esc_attr( OPT_SECONDS_BETWEEN_CALLS ),
 	esc_html__( 'Seconds between API calls', 'api-rate-limit-now' ),
 	esc_attr( $seconds_between_calls ),
-	esc_html__( 'Minimum number of seconds between REST API requests from the same IP address.', 'api-rate-limit-now' )
+	esc_html(
+		sprintf(
+			/* translators: 1: lowest accepted number of seconds, 2: highest accepted number of seconds */
+			__( 'Minimum number of seconds between REST API requests from the same IP address, from %1$d to %2$d.', 'api-rate-limit-now' ),
+			SECONDS_BETWEEN_CALLS_MIN,
+			SECONDS_BETWEEN_CALLS_MAX
+		)
+	),
+	esc_attr( (string) SECONDS_BETWEEN_CALLS_MIN ),
+	esc_attr( (string) SECONDS_BETWEEN_CALLS_MAX )
 );
 
 // Rate-limit all guests.
@@ -67,7 +77,7 @@ printf(
 	esc_attr( OPT_RATE_LIMIT_ALL_GUESTS ),
 	checked( $rate_limit_all_guests, true, false ),
 	esc_html__( 'Apply rate limiting to all non-logged-in users', 'api-rate-limit-now' ),
-	esc_html__( 'When enabled, all guest (non-logged-in) API requests are rate-limited. When disabled, only the specific IPs listed below are rate-limited.', 'api-rate-limit-now' )
+	esc_html__( 'When enabled, all API requests from visitors who are not logged in are rate-limited. Ignored while the Rate-limited IPs list below has any addresses in it.', 'api-rate-limit-now' )
 );
 
 // Rate-limited IPs.
@@ -76,7 +86,7 @@ printf(
 	esc_attr( OPT_RATE_LIMITED_IPS ),
 	esc_html__( 'Rate-limited IPs', 'api-rate-limit-now' ),
 	esc_textarea( $rate_limited_ips ),
-	esc_html__( 'IP addresses to rate-limit, separated by commas or newlines. Only used when "Rate-limit all guests" is disabled.', 'api-rate-limit-now' )
+	esc_html__( 'IP addresses to rate-limit, separated by commas or newlines. While this list has any addresses in it, only these addresses are rate-limited, whether or not they are logged in, and "Rate-limit all guests" is ignored.', 'api-rate-limit-now' )
 );
 
 // Never rate-limited IPs.
@@ -109,7 +119,7 @@ printf(
 // Enable logging.
 printf(
 	'<tr><th scope="row">%1$s</th><td><label for="%2$s"><input type="checkbox" id="%2$s" name="%2$s" value="1" %3$s /> %4$s</label><p class="description">%5$s</p></td></tr>',
-	esc_html__( 'Enable logging', 'api-rate-limit-now' ),
+	esc_html_x( 'Enable logging', 'settings row heading', 'api-rate-limit-now' ),
 	esc_attr( OPT_LOGGING_ENABLED ),
 	checked( $logging_enabled, true, false ),
 	esc_html__( 'Log blocked API requests', 'api-rate-limit-now' ),
@@ -118,11 +128,30 @@ printf(
 
 // Log retention.
 printf(
-	'<tr><th scope="row"><label for="%1$s">%2$s</label></th><td><input type="number" id="%1$s" name="%1$s" value="%3$s" min="1" max="90" class="small-text" /><p class="description">%4$s</p></td></tr>',
+	'<tr><th scope="row"><label for="%1$s">%2$s</label></th><td><input type="number" id="%1$s" name="%1$s" value="%3$s" min="%5$s" max="%6$s" class="small-text" /><p class="description">%4$s</p></td></tr>',
 	esc_attr( OPT_LOG_RETENTION ),
 	esc_html__( 'Log retention (days)', 'api-rate-limit-now' ),
 	esc_attr( $log_retention ),
-	esc_html__( 'Number of days to keep log entries before they are automatically pruned.', 'api-rate-limit-now' )
+	esc_html(
+		sprintf(
+			/* translators: 1: lowest accepted number of days, 2: highest accepted number of days */
+			__( 'Number of days to keep log entries before they are automatically pruned, from %1$d to %2$d.', 'api-rate-limit-now' ),
+			LOG_RETENTION_MIN,
+			LOG_RETENTION_MAX
+		)
+	),
+	esc_attr( (string) LOG_RETENTION_MIN ),
+	esc_attr( (string) LOG_RETENTION_MAX )
+);
+
+// Delete data on uninstall.
+printf(
+	'<tr><th scope="row">%1$s</th><td><label for="%2$s"><input type="checkbox" id="%2$s" name="%2$s" value="1" %3$s /> %4$s</label><p class="description">%5$s</p></td></tr>',
+	esc_html_x( 'Uninstall', 'settings row heading: what happens when the plugin is deleted', 'api-rate-limit-now' ),
+	esc_attr( OPT_DELETE_DATA_ON_UNINSTALL ),
+	checked( $delete_data, true, false ),
+	esc_html__( 'Delete all plugin data when uninstalled', 'api-rate-limit-now' ),
+	esc_html__( 'When enabled, deleting the plugin from the Plugins screen also removes its settings and the log. Deactivating never deletes anything.', 'api-rate-limit-now' )
 );
 
 echo '</tbody></table>';
@@ -133,7 +162,7 @@ echo '</form></div>';
 
 // --- Log tab panel ---
 
-echo '<div id="log-panel" class="wptarl-tab-panel" style="display:none;">';
+echo '<div id="log-panel" class="wptarl-tab-panel" hidden>';
 
 $log_entries = Log::get_recent( Log::get_view_row_limit() );
 
@@ -156,7 +185,7 @@ if ( empty( $log_entries ) ) {
 
 	echo '<table class="widefat fixed striped"><thead><tr>';
 	printf( '<th>%s</th>', esc_html__( 'IP Address', 'api-rate-limit-now' ) );
-	printf( '<th>%s</th>', esc_html__( 'Blocked At', 'api-rate-limit-now' ) );
+	printf( '<th>%s</th>', esc_html_x( 'Blocked At', 'log table column: date and time the request was refused', 'api-rate-limit-now' ) );
 	printf( '<th>%s</th>', esc_html__( 'Request URI', 'api-rate-limit-now' ) );
 	echo '</tr></thead><tbody>';
 
@@ -173,10 +202,10 @@ if ( empty( $log_entries ) ) {
 }
 
 // Clear log form.
-echo '<form method="post" style="margin-top: 12px;">';
-echo '<input type="hidden" name="wptarl_clear_log" value="1" />';
-wp_nonce_field( 'wptarl_clear_log', 'wptarl_clear_log_nonce' );
-submit_button( __( 'Clear Log', 'api-rate-limit-now' ), 'secondary' );
+echo '<form method="post" class="wptarl-clear-log-form">';
+printf( '<input type="hidden" name="%s" value="1" />', esc_attr( CLEAR_LOG_FIELD ) );
+wp_nonce_field( NONCE_CLEAR_LOG_ACTION, NONCE_CLEAR_LOG_FIELD );
+submit_button( _x( 'Clear Log', 'verb; button that deletes every log entry', 'api-rate-limit-now' ), 'secondary' );
 echo '</form>';
 
 echo '</div>';

@@ -10,19 +10,16 @@ document.addEventListener( 'DOMContentLoaded', () => {
 	const tabs = document.querySelectorAll( '.nav-tab[data-tab]' );
 	const panels = document.querySelectorAll( '.wptarl-tab-panel' );
 
-	function activateTab( tabName ) {
-		tabs.forEach( ( t ) => t.classList.remove( 'nav-tab-active' ) );
-		const activeTab = document.querySelector( '[data-tab="' + tabName + '"]' );
-		if ( activeTab ) {
-			activeTab.classList.add( 'nav-tab-active' );
+	function activateTab( requestedTabName ) {
+		// An unknown hash shows the Settings tab rather than an empty page.
+		const tabName = document.getElementById( requestedTabName + '-panel' ) ? requestedTabName : 'settings';
+
+		for ( const tab of tabs ) {
+			tab.classList.toggle( 'nav-tab-active', tab.dataset.tab === tabName );
 		}
 
-		panels.forEach( ( panel ) => {
-			panel.style.display = 'none';
-		} );
-		const activePanel = document.getElementById( tabName + '-panel' );
-		if ( activePanel ) {
-			activePanel.style.display = 'block';
+		for ( const panel of panels ) {
+			panel.hidden = panel.id !== tabName + '-panel';
 		}
 	}
 
@@ -31,8 +28,8 @@ document.addEventListener( 'DOMContentLoaded', () => {
 		activateTab( initialTab );
 
 		tabs.forEach( ( tab ) => {
-			tab.addEventListener( 'click', ( e ) => {
-				e.preventDefault();
+			tab.addEventListener( 'click', ( clickEvent ) => {
+				clickEvent.preventDefault();
 				const tabName = tab.dataset.tab;
 				window.location.hash = tabName;
 				activateTab( tabName );
@@ -50,25 +47,25 @@ document.addEventListener( 'DOMContentLoaded', () => {
 	const copyLink = document.querySelector( '.wptarl-copy-ip' );
 
 	if ( copyLink ) {
-		copyLink.addEventListener( 'click', ( e ) => {
-			e.preventDefault();
+		copyLink.addEventListener( 'click', ( clickEvent ) => {
+			clickEvent.preventDefault();
 
 			const ip = copyLink.dataset.ip || '';
 
-			if ( ! ip ) {
-				return;
+			if ( ip && navigator.clipboard ) {
+				const originalText = copyLink.textContent;
+
+				navigator.clipboard.writeText( ip ).then( () => {
+					copyLink.textContent = wptarlAdmin.copiedText;
+					copyLink.classList.add( 'wptarl-copied' );
+					setTimeout( () => {
+						copyLink.textContent = originalText;
+						copyLink.classList.remove( 'wptarl-copied' );
+					}, 1500 );
+				} ).catch( ( clipboardError ) => {
+					console.error( 'API Rate Limiter: could not copy the IP address', clipboardError );
+				} );
 			}
-
-			const originalText = copyLink.textContent;
-
-			navigator.clipboard.writeText( ip ).then( () => {
-				copyLink.textContent = wptarlAdmin.copiedText;
-				copyLink.classList.add( 'wptarl-copied' );
-				setTimeout( () => {
-					copyLink.textContent = originalText;
-					copyLink.classList.remove( 'wptarl-copied' );
-				}, 1500 );
-			} );
 		} );
 	}
 } );

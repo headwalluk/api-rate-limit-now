@@ -42,16 +42,14 @@ class Plugin {
 	public function run( string $plugin_file ): void {
 		add_action( 'rest_api_init', array( $this, 'handle_rate_limiting' ), 10, 1 );
 
+		add_action( 'init', array( $this, 'load_textdomain' ) );
+
 		$this->settings = new Settings();
 		add_action( 'admin_init', array( $this->settings, 'register_settings' ) );
 		add_action( 'admin_init', array( $this, 'handle_clear_log' ) );
+		add_action( 'admin_init', array( self::class, 'maintain' ) );
 
-		Log::maybe_create_table();
-
-		add_action( 'wptarl_prune_log', array( $this, 'prune_log' ) );
-		if ( ! wp_next_scheduled( 'wptarl_prune_log' ) ) {
-			wp_schedule_event( time(), 'daily', 'wptarl_prune_log' );
-		}
+		add_action( CRON_PRUNE_LOG, array( $this, 'prune_log' ) );
 
 		if ( is_admin() ) {
 			$this->admin_hooks = new Admin_Hooks( $plugin_file );
@@ -62,36 +60,49 @@ class Plugin {
 	}
 
 	/**
+	 * Load the plugin's translations.
+	 *
+	 * @since 3.0.0
+	 */
+	public function load_textdomain(): void {
+		load_plugin_textdomain( 'api-rate-limit-now', false, dirname( WPTARL_BASENAME ) . '/languages' );
+	}
+
+	/**
+	 * Create or update the log table and schedule the daily prune event, when either is missing.
+	 *
+	 * Runs on activation and admin_init, never on front-end requests.
+	 *
+	 * @since 3.0.0
+	 */
+	public static function maintain(): void {
+		Log::maybe_create_table();
+
+		if ( ! wp_next_scheduled( CRON_PRUNE_LOG ) ) {
+			wp_schedule_event( time(), 'daily', CRON_PRUNE_LOG );
+		}
+	}
+
+	/**
 	 * Handle the "Clear Log" form submission.
 	 *
 	 * @since 2.0.0
 	 */
 	public function handle_clear_log(): void {
-		if ( ! isset( $_POST['wptarl_clear_log'] ) ) {
+		if ( ! isset( $_POST[ CLEAR_LOG_FIELD ] ) ) {
 			return;
 		}
 
-		if ( ! current_user_can( 'manage_options' ) ) {
+		if ( ! current_user_can( ADMIN_CAPABILITY ) ) {
 			return;
 		}
 
-		check_admin_referer( 'wptarl_clear_log', 'wptarl_clear_log_nonce' );
+		check_admin_referer( NONCE_CLEAR_LOG_ACTION, NONCE_CLEAR_LOG_FIELD );
 
 		Log::clear();
 
 		wp_safe_redirect( admin_url( 'options-general.php?page=' . ADMIN_MENU_SLUG . '#log' ) );
 		exit;
-	}
-
-	/**
-	 * Get the Settings instance.
-	 *
-	 * @since 2.0.0
-	 *
-	 * @return Settings The settings instance.
-	 */
-	public function get_settings(): Settings {
-		return $this->settings;
 	}
 
 	/**
@@ -127,7 +138,7 @@ class Plugin {
 			$transient_key          = TRANSIENT_PREFIX . $client_ip;
 		}
 
-		$is_client_rate_limited = (bool) apply_filters( 'wptarl_is_client_rate_limited', $is_client_rate_limited );
+		$is_client_rate_limited = (bool) filter_var( apply_filters( 'wptarl_is_client_rate_limited', $is_client_rate_limited ), FILTER_VALIDATE_BOOLEAN );
 
 		if ( $is_client_rate_limited && ! empty( $transient_key ) ) {
 			$this->enforce_rate_limit( $transient_key, $client_ip );
@@ -158,7 +169,13 @@ class Plugin {
 			// A listed User-Agent is limited whether or not the client is logged in.
 			$is_limited = true;
 		} else {
-			$rate_limited_ips = apply_filters( 'wptarl_rate_limited_ips', wptarl_parse_ip_list( (string) get_option( OPT_RATE_LIMITED_IPS, DEF_RATE_LIMITED_IPS ) ) );
+			$saved_ips        = wptarl_parse_ip_list( (string) get_option( OPT_RATE_LIMITED_IPS, DEF_RATE_LIMITED_IPS ) );
+			$rate_limited_ips = apply_filters( 'wptarl_rate_limited_ips', $saved_ips );
+
+			if ( ! is_array( $rate_limited_ips ) ) {
+				// A filter returned something unusable; use the saved list rather than fail every REST request.
+				$rate_limited_ips = $saved_ips;
+			}
 
 			if ( ! empty( $rate_limited_ips ) ) {
 				$is_limited = in_array( $client_ip, $rate_limited_ips, true );
@@ -240,7 +257,11 @@ class Plugin {
 
 		if ( empty( $window_expires_at ) ) {
 			// No recent request from this IP - allow it and start a window, storing when it ends.
-			$seconds_between_calls = absint( apply_filters( 'wptarl_seconds_between_api_calls', get_option( OPT_SECONDS_BETWEEN_CALLS, DEF_SECONDS_BETWEEN_CALLS ), $client_ip ) );
+			$saved_seconds    = absint( get_option( OPT_SECONDS_BETWEEN_CALLS, DEF_SECONDS_BETWEEN_CALLS ) );
+			$filtered_seconds = apply_filters( 'wptarl_seconds_between_api_calls', $saved_seconds, $client_ip );
+
+			// A filter may return 0 to allow this client unlimited calls; anything non-numeric keeps the saved value.
+			$seconds_between_calls = is_numeric( $filtered_seconds ) ? absint( $filtered_seconds ) : $saved_seconds;
 
 			if ( $seconds_between_calls > 0 ) {
 				set_transient( $transient_key, time() + $seconds_between_calls, $seconds_between_calls );

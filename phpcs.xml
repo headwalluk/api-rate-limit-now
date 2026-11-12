@@ -2,6 +2,9 @@
 <ruleset name="API Rate Limiter Standards">
 	<description>WordPress Coding Standards for API Rate Limiter</description>
 
+	<config name="minimum_wp_version" value="6.2"/>
+	<config name="testVersion" value="8.2-"/>
+
 	<file>.</file>
 
 	<!-- Exclude patterns -->

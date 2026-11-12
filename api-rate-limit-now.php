@@ -1,16 +1,17 @@
 <?php
 /**
  * Plugin Name:       API Rate Limiter
- * Plugin URI:        https://wp-tutorials.tech/optimise-wordpress/rate-limit-wordpress-api-calls/
+ * Plugin URI:        https://headwall-hosting.com/plugins/protect-your-wp-site-with-api-rate-limiting/
  * Description:       Rate-limit REST API calls by client IP address.
  * Version:           2.1.1
- * Requires at least: 6.0
- * Requires PHP:      8.0
+ * Requires at least: 6.2
+ * Requires PHP:      8.2
  * Author:            Paul Faulkner
- * Author URI:        https://wp-tutorials.tech/
+ * Author URI:        https://headwall-hosting.com/a-web-guys-blog/
  * License:           GPLv2 or later
  * License URI:       http://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       api-rate-limit-now
+ * Domain Path:       /languages
  *
  * @package Api_Rate_Limiter
  */
@@ -28,10 +29,10 @@ require_once __DIR__ . '/includes/class-settings.php';
 require_once __DIR__ . '/includes/class-admin-hooks.php';
 require_once __DIR__ . '/includes/class-log.php';
 
-// GitHub updates are only checked from the admin area and cron.
-if ( is_admin() || wp_doing_cron() ) {
+// GitHub updates: admin, cron and WP-CLI only.
+if ( is_admin() || wp_doing_cron() || ( defined( 'WP_CLI' ) && WP_CLI ) ) {
 	require_once __DIR__ . '/includes/class-github-updater.php';
-	new Api_Rate_Limiter\Github_Updater();
+	new Api_Rate_Limiter\Github_Updater( WPTARL_FILE, Api_Rate_Limiter\UPDATER_GITHUB_REPO, WPTARL_VERSION, Api_Rate_Limiter\FILTER_UPDATER_ENABLED );
 }
 
 /**
@@ -48,11 +49,21 @@ function wptarl_init(): void {
 wptarl_init();
 
 /**
+ * Create the log table and schedule the prune event on plugin activation.
+ *
+ * @since 3.0.0
+ */
+function wptarl_activate(): void {
+	Api_Rate_Limiter\Plugin::maintain();
+}
+register_activation_hook( __FILE__, 'wptarl_activate' );
+
+/**
  * Clear the scheduled cron event on plugin deactivation.
  *
  * @since 2.0.0
  */
 function wptarl_deactivate(): void {
-	wp_clear_scheduled_hook( 'wptarl_prune_log' );
+	wp_clear_scheduled_hook( Api_Rate_Limiter\CRON_PRUNE_LOG );
 }
 register_deactivation_hook( __FILE__, 'wptarl_deactivate' );

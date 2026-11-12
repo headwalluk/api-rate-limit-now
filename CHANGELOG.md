@@ -8,6 +8,46 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+**Updating from 2.0.0:** 2.1.0 and 2.1.1 below were never published as releases, so this is the first release since 2.0.0 and includes both. Read all three entries. In particular:
+
+- **The plugin is deactivated by this update** (the main file was renamed in 2.1.0). Reactivate it under Plugins; settings and the log are kept
+- **Requires PHP 8.2 and WordPress 6.2** (from 8.0 and 6.0)
+- **Behind a proxy or CDN, check the client IP** (see Security below). The settings page shows the address the plugin sees for you
+- 2.0.0 has no updater, so install this release manually once. Later releases arrive through the normal Updates screen
+
+### Security
+
+- **Any client could escape the rate limit, or claim to be exempt, with a forged header.** The client IP was read from the `Client-IP` and `X-Forwarded-For` request headers before `REMOTE_ADDR`, and a client can set those headers to anything. Sending a different `X-Forwarded-For` with each request gave a new allowance every time, and sending `Client-IP: 127.0.0.1` matched the default *Never rate-limited IPs* list. The plugin now uses only `REMOTE_ADDR`. Sites behind a proxy or CDN should have the web server restore the visitor's address into `REMOTE_ADDR` (nginx `real_ip_module`, Apache `mod_remoteip`); without that, every visitor shares the proxy's address. Introduced in 2.0.0.
+
+### Added
+
+- The `wptarl_client_ip` filter, to supply the client IP where the web server can't be configured. Return `null` to leave a request unlimited.
+- **Delete all plugin data when uninstalled** setting, off by default.
+- Translations: the plugin loads its text domain, and ships German, Greek, British English, Spanish, French, Italian, Dutch and Polish.
+- A privacy section in `docs/how-it-works.md`.
+
+### Changed
+
+- **Deleting the plugin keeps its settings and log** unless *Delete all plugin data when uninstalled* is on. Before, deleting always removed everything. Deactivating still never deletes anything.
+- **Seconds between API calls** accepts 1 to 3,600 and **Log retention** 1 to 90 days, checked when saving. A value outside the range restores the default; before, any positive number was saved.
+- `wptarl_is_client_rate_limited` is read as a boolean the way WordPress options are, so `'no'`, `'off'` and `'false'` now count as false. Before, any non-empty string counted as true.
+- `wptarl_seconds_between_api_calls` receives the setting as an integer, and a non-numeric result is ignored.
+- The log table and the daily prune event are checked on activation and in the admin area, no longer on every request.
+- The GitHub updater is the shared Headwall updater. Its cache is now `api_rate_limit_now_github_release` (was `wptarl_github_release`), and it also runs under WP-CLI, so `wp plugin update` sees new releases.
+- The plugin and author links point at headwall-hosting.com.
+- The plugin name stays as written in every language, in the menu, on the settings page and on the Plugins screen. Only the description is translated.
+
+### Fixed
+
+- A `wptarl_rate_limited_ips` filter returning anything other than an array made every REST request fail with a fatal error. It's now ignored, and the saved list is used.
+- The *Rate-limit all guests* and *Rate-limited IPs* help text said the list was only used with guest limiting off. While the list has addresses in it, it's used whatever that setting says, and applies to logged-in users too; the text now says so. Behaviour is unchanged.
+- Database failures were silent. A failed log insert, prune or clear is now written to the PHP error log, and **Clear Log** falls back to `DELETE` on hosts that don't allow `TRUNCATE`. A log table that couldn't be created is retried, instead of being recorded as created.
+- An unknown tab in the settings page URL showed an empty page; it now shows the Settings tab.
+
+### Removed
+
+- `readme.txt`. The README, `CHANGELOG.md` and `docs/` cover everything it did, and the release workflow no longer checks its stable tag.
+
 ## [2.1.1] - 2026-09-17
 
 ### Security

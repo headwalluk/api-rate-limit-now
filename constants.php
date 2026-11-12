@@ -9,6 +9,12 @@ namespace Api_Rate_Limiter;
 
 defined( 'ABSPATH' ) || die();
 
+// Plugin name, shown as written in every language.
+const PLUGIN_NAME = 'API Rate Limiter';
+
+// Every option name starts with this, so uninstall.php can find them by prefix.
+const OPTION_PREFIX = 'wptarl_';
+
 // Option keys (wp_options) - prefix with OPT_.
 const OPT_SECONDS_BETWEEN_CALLS     = 'wptarl_seconds_between_calls';
 const OPT_RATE_LIMIT_ALL_GUESTS     = 'wptarl_rate_limit_all_guests';
@@ -16,6 +22,7 @@ const OPT_RATE_LIMITED_IPS          = 'wptarl_rate_limited_ips';
 const OPT_NEVER_RATE_LIMITED_IPS    = 'wptarl_never_rate_limited_ips';
 const OPT_RATE_LIMITED_USER_AGENTS  = 'wptarl_rate_limited_user_agents';
 const OPT_NEVER_RATE_LIMITED_ROUTES = 'wptarl_never_rate_limited_routes';
+const OPT_DELETE_DATA_ON_UNINSTALL  = 'wptarl_delete_data_on_uninstall';
 
 // Default values - prefix with DEF_.
 const DEF_SECONDS_BETWEEN_CALLS    = 10;
@@ -25,6 +32,13 @@ const DEF_NEVER_RATE_LIMITED_IPS   = '127.0.0.1, ::1';
 const DEF_RATE_LIMITED_USER_AGENTS = '';
 // WooCommerce Store API (shopper cart/checkout) and Payment Plugins for PayPal button requests.
 const DEF_NEVER_RATE_LIMITED_ROUTES = "wc/store\nwc-ppcp";
+const DEF_DELETE_DATA_ON_UNINSTALL  = false;
+
+// Bounds for numeric settings. A saved value outside them falls back to the default.
+const SECONDS_BETWEEN_CALLS_MIN = 1;
+const SECONDS_BETWEEN_CALLS_MAX = 3600;
+const LOG_RETENTION_MIN         = 1;
+const LOG_RETENTION_MAX         = 90;
 
 // Transient key prefix. The value is the Unix time the client's window ends.
 const TRANSIENT_PREFIX = 'wptarl_';
@@ -40,7 +54,23 @@ const SETTINGS_SECTION_GENERAL = 'wptarl_general_section';
 // Menu slug for the admin page.
 const ADMIN_MENU_SLUG = 'wptarl-settings';
 
-// Plugin basename (set during init, used for settings link).
+// Capability needed to change settings and clear the log.
+const ADMIN_CAPABILITY = 'manage_options';
+
+// Admin asset handle, shared by the stylesheet and the script.
+const ADMIN_ASSET_HANDLE = 'wptarl-admin';
+
+// Clear Log form: the field that marks the submission, and its nonce.
+const CLEAR_LOG_FIELD        = 'wptarl_clear_log';
+const NONCE_CLEAR_LOG_ACTION = 'wptarl_clear_log';
+const NONCE_CLEAR_LOG_FIELD  = 'wptarl_clear_log_nonce';
+
+// Daily cron event that prunes the log.
+const CRON_PRUNE_LOG = 'wptarl_prune_log';
+
+// Filter that can switch the GitHub updater off.
+const FILTER_UPDATER_ENABLED = 'wptarl_updater_enabled';
+
 const PLUGIN_DIR = __DIR__;
 
 // Database.
@@ -66,10 +96,5 @@ const LOG_REQUEST_URI_MAX_LENGTH = 255;
 const REDACTED_QUERY_PARAM_FRAGMENTS = array( 'key', 'secret', 'token', 'password', 'passwd', 'nonce', 'signature', 'oauth', 'session', 'credential' );
 const REDACTED_QUERY_VALUE           = 'REDACTED';
 
-// GitHub updater. A failed lookup is cached for the shorter failure TTL.
-const UPDATER_GITHUB_REPO       = 'headwalluk/api-rate-limit-now';
-const UPDATER_CACHE_KEY         = 'wptarl_github_release';
-const UPDATER_CACHE_TTL         = 12 * HOUR_IN_SECONDS;
-const UPDATER_FAILURE_CACHE_KEY = 'wptarl_github_failed';
-const UPDATER_FAILURE_CACHE_TTL = HOUR_IN_SECONDS;
-const UPDATER_REQUEST_TIMEOUT   = 10;
+// GitHub repository the updater checks for releases.
+const UPDATER_GITHUB_REPO = 'headwalluk/api-rate-limit-now';

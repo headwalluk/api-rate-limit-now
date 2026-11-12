@@ -103,6 +103,16 @@ class Settings {
 				'default'           => DEF_LOG_RETENTION,
 			]
 		);
+
+		register_setting(
+			SETTINGS_GROUP,
+			OPT_DELETE_DATA_ON_UNINSTALL,
+			array(
+				'type'              => 'boolean',
+				'sanitize_callback' => array( $this, 'sanitize_boolean' ),
+				'default'           => DEF_DELETE_DATA_ON_UNINSTALL,
+			)
+		);
 	}
 
 	/**
@@ -112,16 +122,10 @@ class Settings {
 	 *
 	 * @param mixed $value Raw input value.
 	 *
-	 * @return int Sanitized positive integer.
+	 * @return int Seconds between SECONDS_BETWEEN_CALLS_MIN and SECONDS_BETWEEN_CALLS_MAX.
 	 */
-	public function sanitize_seconds_between_calls( $value ): int {
-		$sanitized = absint( $value );
-
-		if ( 0 === $sanitized ) {
-			$sanitized = DEF_SECONDS_BETWEEN_CALLS;
-		}
-
-		return $sanitized;
+	public function sanitize_seconds_between_calls( mixed $value ): int {
+		return $this->sanitize_range( $value, SECONDS_BETWEEN_CALLS_MIN, SECONDS_BETWEEN_CALLS_MAX, DEF_SECONDS_BETWEEN_CALLS );
 	}
 
 	/**
@@ -133,7 +137,7 @@ class Settings {
 	 *
 	 * @return bool Sanitized boolean.
 	 */
-	public function sanitize_boolean( $value ): bool {
+	public function sanitize_boolean( mixed $value ): bool {
 		return (bool) filter_var( $value, FILTER_VALIDATE_BOOLEAN );
 	}
 
@@ -144,16 +148,28 @@ class Settings {
 	 *
 	 * @param mixed $value Raw input value.
 	 *
-	 * @return int Sanitized positive integer.
+	 * @return int Days between LOG_RETENTION_MIN and LOG_RETENTION_MAX.
 	 */
-	public function sanitize_log_retention( $value ): int {
-		$sanitized = absint( $value );
+	public function sanitize_log_retention( mixed $value ): int {
+		return $this->sanitize_range( $value, LOG_RETENTION_MIN, LOG_RETENTION_MAX, DEF_LOG_RETENTION );
+	}
 
-		if ( 0 === $sanitized ) {
-			$sanitized = DEF_LOG_RETENTION;
-		}
+	/**
+	 * Return a whole number within the bounds, or the fallback when the value is outside them or not numeric.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param mixed $value    Raw input value.
+	 * @param int   $minimum  Lowest accepted value.
+	 * @param int   $maximum  Highest accepted value.
+	 * @param int   $fallback Value used when the input is out of range.
+	 *
+	 * @return int The accepted value or the fallback.
+	 */
+	private function sanitize_range( mixed $value, int $minimum, int $maximum, int $fallback ): int {
+		$number = is_numeric( $value ) ? (int) $value : $fallback;
 
-		return $sanitized;
+		return ( $number >= $minimum && $number <= $maximum ) ? $number : $fallback;
 	}
 
 	/**
@@ -168,8 +184,8 @@ class Settings {
 	 *
 	 * @return string Sanitized comma-separated IP list.
 	 */
-	public function sanitize_ip_list( $value ): string {
-		$raw_ips       = sanitize_textarea_field( (string) $value );
+	public function sanitize_ip_list( mixed $value ): string {
+		$raw_ips       = sanitize_textarea_field( is_string( $value ) ? $value : '' );
 		$parsed_ips    = wptarl_parse_ip_list( $raw_ips );
 		$validated_ips = [];
 

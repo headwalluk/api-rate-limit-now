@@ -2,28 +2,62 @@
 /**
  * GitHub Updater.
  *
- * Hooks into the WordPress plugin update system to check the plugin's
- * GitHub repository for new releases and serve them as standard plugin
- * updates.
+ * Serves GitHub Releases as standard WordPress plugin updates. Portable: copy
+ * this file into another plugin and change only the `namespace` and `@package`
+ * lines, then load it from the main plugin file on admin, cron and WP-CLI requests:
+ *
+ *     new My_Plugin\Github_Updater( __FILE__, 'owner/my-plugin', MY_PLUGIN_VERSION, 'my_plugin_updater_enabled' );
+ *
+ * Each release must attach "<slug>.zip" or "<slug>-<version>.zip".
  *
  * @package Api_Rate_Limiter
- * @since 2.1.0
+ * @since 1.0.0
  */
 
 namespace Api_Rate_Limiter;
 
+// Exit if accessed directly.
 defined( 'ABSPATH' ) || die();
 
 /**
  * Checks GitHub Releases for plugin updates and hooks into the
  * WordPress plugin update system.
  *
- * @since 2.1.0
+ * @since 1.0.0
  */
 class Github_Updater {
 
 	/**
-	 * Plugin basename (e.g. "api-rate-limit-now/api-rate-limit-now.php").
+	 * Seconds to cache a successful release lookup.
+	 *
+	 * @var int
+	 */
+	private const CACHE_TTL = 12 * HOUR_IN_SECONDS;
+
+	/**
+	 * Seconds to back off after a failed lookup. Shorter than CACHE_TTL so a
+	 * real release is not missed for long.
+	 *
+	 * @var int
+	 */
+	private const FAILURE_CACHE_TTL = HOUR_IN_SECONDS;
+
+	/**
+	 * Seconds to wait on the GitHub API before giving up.
+	 *
+	 * @var int
+	 */
+	private const REQUEST_TIMEOUT = 10;
+
+	/**
+	 * Absolute path to the main plugin file.
+	 *
+	 * @var string
+	 */
+	private string $plugin_file;
+
+	/**
+	 * Plugin basename (e.g. "my-plugin/my-plugin.php").
 	 *
 	 * @var string
 	 */
@@ -37,13 +71,44 @@ class Github_Updater {
 	private string $plugin_slug;
 
 	/**
-	 * Constructor.
+	 * GitHub repository in "owner/repo" format.
 	 *
-	 * @since 2.1.0
+	 * @var string
 	 */
-	public function __construct() {
-		$this->plugin_basename = WPTARL_BASENAME;
+	private string $github_repo;
+
+	/**
+	 * The plugin's version constant, checked against the file header.
+	 *
+	 * @var string
+	 */
+	private string $plugin_version;
+
+	/**
+	 * Name of the filter that can switch this updater off.
+	 *
+	 * @var string
+	 */
+	private string $enabled_filter;
+
+	/**
+	 * Store the plugin's details and register the update hooks.
+	 *
+	 * @since 1.0.0
+	 * @since 1.6.1 Takes the plugin's details as arguments.
+	 *
+	 * @param string $plugin_file    Absolute path to the main plugin file.
+	 * @param string $github_repo    GitHub repository in "owner/repo" format.
+	 * @param string $plugin_version The plugin's version constant.
+	 * @param string $enabled_filter Filter name that returns false to disable updates, e.g. "my_plugin_updater_enabled".
+	 */
+	public function __construct( string $plugin_file, string $github_repo, string $plugin_version, string $enabled_filter ) {
+		$this->plugin_file     = $plugin_file;
+		$this->plugin_basename = plugin_basename( $plugin_file );
 		$this->plugin_slug     = dirname( $this->plugin_basename );
+		$this->github_repo     = $github_repo;
+		$this->plugin_version  = $plugin_version;
+		$this->enabled_filter  = $enabled_filter;
 
 		add_filter( 'pre_set_site_transient_update_plugins', array( $this, 'check_for_update' ) );
 		add_filter( 'plugins_api', array( $this, 'plugin_info' ), 10, 3 );
@@ -51,27 +116,46 @@ class Github_Updater {
 	}
 
 	/**
+	 * Delete a plugin's cached release data and failure back-off.
+	 *
+	 * @since 1.6.1
+	 *
+	 * @param string $plugin_slug Plugin directory name.
+	 */
+	public static function delete_cache( string $plugin_slug ): void {
+		delete_transient( self::get_cache_key( $plugin_slug, 'release' ) );
+		delete_transient( self::get_cache_key( $plugin_slug, 'failed' ) );
+	}
+
+	/**
+	 * Build a per-plugin transient name, e.g. "my_plugin_github_release".
+	 *
+	 * @since 1.6.1
+	 *
+	 * @param string $plugin_slug Plugin directory name.
+	 * @param string $suffix      "release" or "failed".
+	 * @return string Transient name.
+	 */
+	private static function get_cache_key( string $plugin_slug, string $suffix ): string {
+		return str_replace( '-', '_', $plugin_slug ) . '_github_' . $suffix;
+	}
+
+	/**
 	 * Check whether GitHub auto-updates are enabled.
 	 *
-	 * @since 2.1.0
+	 * @since 1.0.0
 	 *
 	 * @return bool
 	 */
 	private function is_enabled(): bool {
-		/**
-		 * Filter whether GitHub auto-updates are enabled for API Rate Limiter.
-		 *
-		 * @since 2.1.0
-		 *
-		 * @param bool $enabled Whether auto-updates are enabled. Default true.
-		 */
-		return (bool) filter_var( apply_filters( 'wptarl_updater_enabled', true ), FILTER_VALIDATE_BOOLEAN );
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound -- The plugin passes its own prefixed filter name to the constructor.
+		return (bool) filter_var( apply_filters( $this->enabled_filter, true ), FILTER_VALIDATE_BOOLEAN );
 	}
 
 	/**
 	 * Check GitHub for a newer release and inject into the update transient.
 	 *
-	 * @since 2.1.0
+	 * @since 1.0.0
 	 *
 	 * @param mixed $transient The update_plugins transient — an object once core
 	 *                          has built it, but false or empty on early passes.
@@ -111,10 +195,9 @@ class Github_Updater {
 	/**
 	 * Resolve the installed version from the file header, as recorded in the update transient.
 	 *
-	 * The header is what WordPress compares against, so a drifted WPTARL_VERSION is logged
-	 * as an error rather than trusted.
+	 * Reads the header, not the version constant, and logs an error when they differ.
 	 *
-	 * @since 2.1.0
+	 * @since 1.3.0
 	 *
 	 * @param array $checked The transient's checked list, keyed by plugin basename.
 	 * @return string Version string WordPress considers installed.
@@ -123,10 +206,10 @@ class Github_Updater {
 		$installed_version = (string) ( $checked[ $this->plugin_basename ] ?? '' );
 
 		if ( '' === $installed_version ) {
-			$installed_version = WPTARL_VERSION;
-			$this->log( 'get_installed_version: ' . $this->plugin_basename . ' absent from the checked list, falling back to WPTARL_VERSION ' . $installed_version . '.' );
-		} elseif ( WPTARL_VERSION !== $installed_version ) {
-			$this->log_error( 'get_installed_version: version drift — the plugin header reports ' . $installed_version . ' but WPTARL_VERSION is ' . WPTARL_VERSION . '. Both are set in api-rate-limit-now.php and must be bumped together.' );
+			$installed_version = $this->plugin_version;
+			$this->log( 'get_installed_version: ' . $this->plugin_basename . ' absent from the checked list, falling back to the version constant ' . $installed_version . '.' );
+		} elseif ( $this->plugin_version !== $installed_version ) {
+			$this->log_error( 'get_installed_version: version drift — the ' . $this->plugin_basename . ' header reports ' . $installed_version . ' but its version constant is ' . $this->plugin_version . '. Both must be bumped together.' );
 		} else {
 			// Header and constant agree.
 		}
@@ -137,7 +220,7 @@ class Github_Updater {
 	/**
 	 * Provide plugin information for the "View details" modal.
 	 *
-	 * @since 2.1.0
+	 * @since 1.0.0
 	 *
 	 * @param mixed $result The result object or array. Default false.
 	 * @param mixed $action The API action being performed.
@@ -157,7 +240,7 @@ class Github_Updater {
 			if ( ! function_exists( 'get_plugin_data' ) ) {
 				require_once ABSPATH . 'wp-admin/includes/plugin.php';
 			}
-			$plugin_data = get_plugin_data( WPTARL_FILE, false, true );
+			$plugin_data = get_plugin_data( $this->plugin_file, false, true );
 
 			$result                = new \stdClass();
 			$result->name          = $plugin_data['Name'] ?? $this->plugin_slug;
@@ -185,12 +268,12 @@ class Github_Updater {
 	/**
 	 * Clear the cached release data after a plugin update completes.
 	 *
-	 * @since 2.1.0
+	 * @since 1.0.0
 	 *
 	 * @param mixed $upgrader The upgrader instance.
 	 * @param mixed $options  Update details.
 	 */
-	public function clear_cache( mixed $upgrader, mixed $options ): void { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.FoundBeforeLastUsed -- Signature fixed by the upgrader_process_complete action.
+	public function clear_cache( mixed $upgrader, mixed $options ): void {
 		if (
 			is_array( $options ) &&
 			'update' === ( $options['action'] ?? '' ) &&
@@ -199,30 +282,28 @@ class Github_Updater {
 			is_array( $options['plugins'] ) &&
 			in_array( $this->plugin_basename, $options['plugins'], true )
 		) {
-			delete_transient( UPDATER_CACHE_KEY );
-			delete_transient( UPDATER_FAILURE_CACHE_KEY );
+			self::delete_cache( $this->plugin_slug );
 			delete_site_transient( 'update_plugins' );
 		}
 	}
 
 	/**
-	 * Fetch the latest release from GitHub, with transient caching.
+	 * Fetch the latest release from GitHub, caching success and failure separately.
 	 *
-	 * A successful lookup is cached for UPDATER_CACHE_TTL and a failed one for
-	 * UPDATER_FAILURE_CACHE_TTL, so an unreachable API isn't retried on every check.
-	 *
-	 * @since 2.1.0
+	 * @since 1.0.0
 	 *
 	 * @return array|null Release data array, or null on failure.
 	 */
 	private function get_latest_release(): ?array {
-		$release = null;
-		$cached  = get_transient( UPDATER_CACHE_KEY );
+		$release     = null;
+		$release_key = self::get_cache_key( $this->plugin_slug, 'release' );
+		$failure_key = self::get_cache_key( $this->plugin_slug, 'failed' );
+		$cached      = get_transient( $release_key );
 
 		if ( is_array( $cached ) ) {
 			$this->log( 'get_latest_release: using cached release data.' );
 			$release = $cached;
-		} elseif ( false !== get_transient( UPDATER_FAILURE_CACHE_KEY ) ) {
+		} elseif ( false !== get_transient( $failure_key ) ) {
 			$this->log( 'get_latest_release: backing off, a recent lookup failed.' );
 		} else {
 			$body = $this->request_latest_release();
@@ -232,10 +313,10 @@ class Github_Updater {
 			}
 
 			if ( null === $release ) {
-				set_transient( UPDATER_FAILURE_CACHE_KEY, time(), UPDATER_FAILURE_CACHE_TTL );
+				set_transient( $failure_key, time(), self::FAILURE_CACHE_TTL );
 			} else {
-				set_transient( UPDATER_CACHE_KEY, $release, UPDATER_CACHE_TTL );
-				delete_transient( UPDATER_FAILURE_CACHE_KEY );
+				set_transient( $release_key, $release, self::CACHE_TTL );
+				delete_transient( $failure_key );
 			}
 		}
 
@@ -243,20 +324,20 @@ class Github_Updater {
 	}
 
 	/**
-	 * Request the latest release from the GitHub API.
+	 * Request the latest release from the GitHub API, logging every failure.
 	 *
-	 * @since 2.1.0
+	 * @since 1.3.0
 	 *
 	 * @return array|null Decoded response body, or null if the request failed.
 	 */
 	private function request_latest_release(): ?array {
 		$body = null;
-		$url  = sprintf( 'https://api.github.com/repos/%s/releases/latest', UPDATER_GITHUB_REPO );
+		$url  = sprintf( 'https://api.github.com/repos/%s/releases/latest', $this->github_repo );
 
 		$response = wp_remote_get(
 			$url,
 			array(
-				'timeout' => UPDATER_REQUEST_TIMEOUT,
+				'timeout' => self::REQUEST_TIMEOUT,
 				'headers' => array(
 					'Accept' => 'application/vnd.github.v3+json',
 				),
@@ -283,7 +364,7 @@ class Github_Updater {
 	/**
 	 * Build the cached release array from a GitHub API response body.
 	 *
-	 * @since 2.1.0
+	 * @since 1.3.0
 	 *
 	 * @param array $body Decoded GitHub release API response.
 	 * @return array|null Release data, or null if it carries no usable ZIP asset.
@@ -310,9 +391,9 @@ class Github_Updater {
 	}
 
 	/**
-	 * Find the plugin ZIP asset from a GitHub release, preferring "{slug}.zip" over "{slug}-{version}.zip".
+	 * Find the release's "{slug}.zip" asset, or failing that "{slug}-{version}.zip".
 	 *
-	 * @since 2.1.0
+	 * @since 1.0.0
 	 *
 	 * @param array $release_data Decoded GitHub release API response.
 	 * @return string Download URL, or empty string if no suitable asset found.
@@ -323,9 +404,7 @@ class Github_Updater {
 		if ( ! empty( $release_data['assets'] ) && is_array( $release_data['assets'] ) ) {
 			$stable_name = $this->plugin_slug . '.zip';
 
-			// Versioned form: "<slug>-1.2.3.zip". Anchored and requiring a digit
-			// after the hyphen so an unrelated asset such as "<slug>-docs.zip"
-			// is never offered to WordPress as the plugin.
+			// Requires a digit after the hyphen so "<slug>-docs.zip" never matches.
 			$versioned_pattern = '/^' . preg_quote( $this->plugin_slug, '/' ) . '-[0-9][0-9a-z.\-]*\.zip$/i';
 
 			foreach ( $release_data['assets'] as $asset ) {
@@ -346,26 +425,26 @@ class Github_Updater {
 	}
 
 	/**
-	 * Log a routine flow message to the PHP error log when WP_DEBUG is on.
+	 * Log a flow-tracing message to the PHP error log when WP_DEBUG is on.
 	 *
-	 * @since 2.1.0
+	 * @since 1.0.0
 	 *
 	 * @param string $message The message to log.
 	 */
 	private function log( string $message ): void {
 		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-			error_log( 'Api_Rate_Limiter Github_Updater: ' . $message ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Intentional debug logging.
+			error_log( __NAMESPACE__ . ' Github_Updater: ' . $message ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Intentional debug logging.
 		}
 	}
 
 	/**
 	 * Log a failure to the PHP error log unconditionally.
 	 *
-	 * @since 2.1.0
+	 * @since 1.1.2
 	 *
 	 * @param string $message The message to log.
 	 */
 	private function log_error( string $message ): void {
-		error_log( 'Api_Rate_Limiter Github_Updater [error]: ' . $message ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Intentional error logging for updater failures.
+		error_log( __NAMESPACE__ . ' Github_Updater [error]: ' . $message ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Intentional error logging for updater failures.
 	}
 }

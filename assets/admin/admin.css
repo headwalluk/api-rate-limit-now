@@ -13,6 +13,15 @@
 	box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
 }
 
+.wptarl-tab-panel[hidden] {
+	display: none;
+}
+
+/* Clear Log button, below the log table */
+.wptarl-clear-log-form {
+	margin-top: 12px;
+}
+
 /* Copy IP link */
 .wptarl-copy-ip {
 	font-size: 12px;

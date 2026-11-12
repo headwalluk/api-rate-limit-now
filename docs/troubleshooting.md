@@ -27,9 +27,11 @@ Compare the refused request's URI on the **Log** tab with the saved list. Matchi
 
 If the Log tab shows one address for every refused request, often your load balancer's or CDN's, the plugin isn't seeing your visitors' real addresses. All visitors then share a single window, and one request blocks everyone else for the interval.
 
-The plugin reads `HTTP_CLIENT_IP`, then `HTTP_X_FORWARDED_FOR`, then `REMOTE_ADDR`, and uses the first that holds a **single** valid IP address. A proxy that sends a list of addresses in `X-Forwarded-For` (`203.0.113.7, 10.0.0.2`) isn't read, and the plugin falls back to `REMOTE_ADDR`, which is the proxy.
+The plugin uses only `REMOTE_ADDR`. Behind a proxy, load balancer or CDN, that's the proxy's address unless the web server replaces it with the visitor's. Forwarded headers aren't read, because a client can send any value in them and so escape the limit, or claim to be a never-limited address.
 
-**Fix:** configure the proxy or web server to hand WordPress the visitor's address in `REMOTE_ADDR`. Examples are nginx's `real_ip_module`, Apache's `mod_remoteip`, or Cloudflare's guidance on restoring visitor IPs.
+**Fix:** configure the web server to restore the visitor's address into `REMOTE_ADDR`, trusting the forwarded header only from your proxy's addresses. Examples are nginx's `real_ip_module`, Apache's `mod_remoteip`, or Cloudflare's guidance on restoring visitor IPs. Where that isn't possible, a developer can supply the address with the `wptarl_client_ip` filter; see [hooks and filters](developers/hooks-and-filters.md#wptarl_client_ip).
+
+Before 3.0.0, the plugin read the `Client-IP` and `X-Forwarded-For` headers first. A site that relied on that, with no web server configuration, sees its proxy's address after updating.
 
 The IP shown at the top of the settings page is the address the plugin sees for you. Compare it with your real public address to check.
 
@@ -83,11 +85,11 @@ To redact another parameter name, see the `wptarl_redacted_query_params` filter 
 3. A lookup is cached for 12 hours, and a failed one for an hour. To check again now, delete the cache, then go to **Dashboard → Updates** and click **Check again**:
 
    ```bash
-   wp transient delete wptarl_github_release
-   wp transient delete wptarl_github_failed
+   wp transient delete api_rate_limit_now_github_release
+   wp transient delete api_rate_limit_now_github_failed
    ```
 
-   The updater runs only in the admin area and during cron, so `wp plugin list` and `wp plugin update` don't see GitHub releases.
+   Versions before 3.0.0 used `wptarl_github_release` and `wptarl_github_failed`, and didn't check for updates under WP-CLI.
 4. Check that no code on the site disables updates with the `wptarl_updater_enabled` filter.
 
 ## The plugin was deactivated after an update
