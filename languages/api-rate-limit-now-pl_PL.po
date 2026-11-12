@@ -19,11 +19,6 @@ msgstr ""
 msgid "API Rate Limiter"
 msgstr "API Rate Limiter"
 
-#. Plugin URI of the plugin
-#: api-rate-limit-now.php
-msgid "https://headwall-hosting.com/plugins/protect-your-wp-site-with-api-rate-limiting/"
-msgstr "https://headwall-hosting.com/plugins/protect-your-wp-site-with-api-rate-limiting/"
-
 #. Description of the plugin
 #: api-rate-limit-now.php
 msgid "Rate-limit REST API calls by client IP address."
@@ -187,3 +182,8 @@ msgstr "skopiowano!"
 #: includes/class-plugin.php:279
 msgid "Too many requests. Please slow down."
 msgstr "Zbyt wiele żądań. Proszę zwolnić."
+
+#. Plugin URI of the plugin
+#: api-rate-limit-now.php
+msgid "https://headwall-hosting.com/plugins/api-rate-limit-now/"
+msgstr "https://headwall-hosting.com/plugins/api-rate-limit-now/"

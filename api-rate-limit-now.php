@@ -1,9 +1,9 @@
 <?php
 /**
  * Plugin Name:       API Rate Limiter
- * Plugin URI:        https://headwall-hosting.com/plugins/protect-your-wp-site-with-api-rate-limiting/
+ * Plugin URI:        https://headwall-hosting.com/plugins/api-rate-limit-now/
  * Description:       Rate-limit REST API calls by client IP address.
- * Version:           2.1.1
+ * Version:           3.0.0
  * Requires at least: 6.2
  * Requires PHP:      8.2
  * Author:            Paul Faulkner
@@ -18,7 +18,7 @@
 
 defined( 'ABSPATH' ) || die();
 
-define( 'WPTARL_VERSION', '2.1.1' );
+define( 'WPTARL_VERSION', '3.0.0' );
 define( 'WPTARL_FILE', __FILE__ );
 define( 'WPTARL_BASENAME', plugin_basename( __FILE__ ) );
 
